@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão de Fila - Hospital</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Configuração do Firebase - SUBSTITUA COM SUAS CREDENCIAIS
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY",
+            authDomain: "SEU_PROJECT.firebaseapp.com",
+            databaseURL: "https://SEU_PROJECT.firebaseio.com",
+            projectId: "SEU_PROJECT_ID",
+            storageBucket: "SEU_PROJECT.appspot.com",
+            messagingSenderId: "SEU_SENDER_ID",
+            appId: "SEU_APP_ID"
+        };
+
+        // Inicializar Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
+        const ClinicQueueSystem = () => {
+            const [view, setView] = useState('menu');
+            const [patients, setPatients] = useState([]);
+            const [currentNumber, setCurrentNumber] = useState(1);
+            const [calledPatients, setCalledPatients] = useState([]);
+            const [examResults, setExamResults] = useState({});
+
+            // Sincronização em tempo real com Firebase
+            useEffect(() => {
+                const patientsRef = db.ref('patients');
+                const calledRef = db.ref('calledPatients');
+                const counterRef = db.ref('currentNumber');
+                const examRef = db.ref('examResults');
+
+                patientsRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        setPatients(Object.values(data));
+                    }
+                });
+
+                calledRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        setCalledPatients(Object.values(data));
+                    }
+                });
+
+                counterRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        setCurrentNumber(data);
+                    }
+                });
+
+                examRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        setExamResults(data);
+                    }
+                });
+
+                return () => {
+                    patientsRef.off();
+                    calledRef.off();
+                    counterRef.off();
+                    examRef.off();
+                };
+            }, []);
+
+            const updatePatient = (patient) => {
+                db.ref('patients/' + patient.id).set(patient);
+            };
+
+            const addCalledPatient = (patient) => {
+                const newCalled = [patient, ...calledPatients.slice(0, 4)];
+                db.ref('calledPatients').set(newCalled);
+            };
+
+            const saveExamResult = (patientId, result) => {
+                db.ref('examResults/' + patientId).set(result);
+            };
+
+            // Menu Principal
+            const MenuView = () => (
+                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-4">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="bg-white rounded-lg shadow-xl p-8 mb-6">
+                            <h1 className="text-3xl font-bold text-blue-900 mb-2">Sistema de Gestão Hospitalar</h1>
+                            <p className="text-gray-600 mb-6">Posto de Saúde - Controle Inteligente em Tempo Real</p>
+                            
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <button onClick={() => setView('reception')} className="bg-blue-600 hover:bg-blue-700 text-white p-6 rounded-lg flex items-center justify-center gap-3 transition">
+                                    <span className="text-3xl">👥</span>
+                                    <div className="text-left">
+                                        <div className="font-bold text-lg">Recepção/Triagem</div>
+                                        <div className="text-sm opacity-90">Cadastrar pacientes</div>
+                                    </div>
+                                </button>
+
+                                <button onClick={() => setView('doctor')} className="bg-green-600 hover:bg-green-700 text-white p-6 rounded-lg flex items-center justify-center gap-3 transition">
+                                    <span className="text-3xl">🩺</span>
+                                    <div className="text-left">
+                                        <div className="font-bold text-lg">Médico</div>
+                                        <div className="text-sm opacity-90">Consultas e diagnóstico</div>
+                                    </div>
+                                </button>
+
+                                <button onClick={() => setView('exam')} className="bg-teal-600 hover:bg-teal-700 text-white p-6 rounded-lg flex items-center justify-center gap-3 transition">
+                                    <span className="text-3xl">🔬</span>
+                                    <div className="text-left">
+                                        <div className="font-bold text-lg">Sala de Exames</div>
+                                        <div className="text-sm opacity-90">Realizar análises</div>
+                                    </div>
+                                </button>
+
+                                <button onClick={() => setView('pharmacy')} className="bg-pink-600 hover:bg-pink-700 text-white p-6 rounded-lg flex items-center justify-center gap-3 transition">
+                                    <span className="text-3xl">💊</span>
+                                    <div className="text-left">
+                                        <div className="font-bold text-lg">Farmácia</div>
+                                        <div className="text-sm opacity-90">Receitas médicas</div>
+                                    </div>
+                                </button>
+
+                                <button onClick={() => setView('display')} className="bg-purple-600 hover:bg-purple-700 text-white p-6 rounded-lg flex items-center justify-center gap-3 transition">
+                                    <span className="text-3xl">📺</span>
+                                    <div className="text-left">
+                                        <div className="font-bold text-lg">Painel Público</div>
+                                        <div className="text-sm opacity-90">TV de chamadas</div>
+                                    </div>
+                                </button>
+
+                                <button onClick={() => setView('patient')} className="bg-orange-600 hover:bg-orange-700 text-white p-6 rounded-lg flex items-center justify-center gap-3 transition">
+                                    <span className="text-3xl">📱</span>
+                                    <div className="text-left">
+                                        <div className="font-bold text-lg">Paciente</div>
+                                        <div className="text-sm opacity-90">Acompanhar fila</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-lg shadow-lg p-6">
+                            <h3 className="font-bold text-lg mb-4">Estatísticas em Tempo Real</h3>
+                            <div className="grid grid-cols-4 gap-4 text-center">
+                                <div>
+                                    <div className="text-3xl font-bold text-blue-600">{patients.filter(p => p.status === 'waiting').length}</div>
+                                    <div className="text-sm text-gray-600">Aguardando</div>
+                                </div>
+                                <div>
+                                    <div className="text-3xl font-bold text-green-600">{patients.filter(p => p.status === 'consulting').length}</div>
+                                    <div className="text-sm text-gray-600">Em Consulta</div>
+                                </div>
+                                <div>
+                                    <div className="text-3xl font-bold text-teal-600">{patients.filter(p => p.status === 'exam').length}</div>
+                                    <div className="text-sm text-gray-600">Em Exame</div>
+                                </div>
+                                <div>
+                                    <div className="text-3xl font-bold text-pink-600">{patients.filter(p => p.status === 'pharmacy').length}</div>
+                                    <div className="text-sm text-gray-600">Farmácia</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // Painel de Recepção
+            const ReceptionView = () => {
+                const [formData, setFormData] = useState({
+                    name: '',
+                    age: '',
+                    weight: '',
+                    address: '',
+                    temperature: '',
+                    bloodPressure: '',
+                    symptoms: '',
+                    priority: 'normal'
+                });
+
+                const handleChange = (e) => {
+                    setFormData({...formData, [e.target.name]: e.target.value});
+                };
+
+                const addPatient = () => {
+                    if (!formData.name.trim() || !formData.age) {
+                        alert('Preencha pelo menos nome e idade!');
+                        return;
+                    }
+                    
+                    const newPatient = {
+                        id: Date.now(),
+                        number: currentNumber,
+                        ...formData,
+                        status: 'waiting',
+                        timestamp: new Date().toLocaleTimeString('pt-BR'),
+                        examRoom: null,
+                        prescription: null
+                    };
+
+                    db.ref('patients/' + newPatient.id).set(newPatient);
+                    db.ref('currentNumber').set(currentNumber + 1);
+                    
+                    setFormData({
+                        name: '', age: '', weight: '', address: '',
+                        temperature: '', bloodPressure: '', symptoms: '', priority: 'normal'
+                    });
+                    
+                    alert(`✅ Senha ${currentNumber} gerada para ${formData.name}\nDirigir-se à sala de espera`);
+                };
+
+                return (
+                    <div className="min-h-screen bg-blue-50 p-4">
+                        <div className="max-w-3xl mx-auto">
+                            <button onClick={() => setView('menu')} className="mb-4 text-blue-600 hover:underline font-bold">
+                                ← Voltar ao Menu
+                            </button>
+                            
+                            <div className="bg-white rounded-lg shadow-xl p-6">
+                                <h2 className="text-2xl font-bold text-blue-900 mb-6">📋 Recepção - Triagem de Pacientes</h2>
+                                
+                                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label className="block text-sm font-bold mb-2">Nome Completo *</label>
+                                        <input type="text" name="name" value={formData.name} onChange={handleChange}
+                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Nome do paciente" />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold mb-2">Idade *</label>
+                                        <input type="number" name="age" value={formData.age} onChange={handleChange}
+                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Anos" />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold mb-2">Peso (kg)</label>
+                                        <input type="number" name="weight" value={formData.weight} onChange={handleChange}
+                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Peso" />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold mb-2">Temperatura (°C)</label>
+                                        <input type="number" step="0.1" name="temperature" value={formData.temperature} onChange={handleChange}
+                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            placeholder="36.5" />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold mb-2">Pressão Arterial</label>
+                                        <input type="text" name="bloodPressure" value={formData.bloodPressure} onChange={handleChange}
+                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            placeholder="120/80" />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold mb-2">Prioridade</label>
+                                        <select name="priority" value={formData.priority} onChange={handleChange}
+                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                            <option value="normal">Normal</option>
+                                            <option value="priority">Prioritário (Idoso/Gestante)</option>
+                                            <option value="urgent">Urgente</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-bold mb-2">Morada</label>
+                                        <input type="text" name="address" value={formData.address} onChange={handleChange}
+                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Endereço completo" />
+                                    </div>
+
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-bold mb-2">Sintomas</label>
+                                        <textarea name="symptoms" value={formData.symptoms} onChange={handleChange}
+                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            rows="3" placeholder="Descreva os sintomas do paciente"></textarea>
+                                    </div>
+                                </div>
+
+                                <button onClick={addPatient}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-lg font-bold text-lg transition">
+                                    🎫 Gerar Senha e Registrar Paciente
+                                </button>
+
+                                <div className="mt-6 bg-blue-100 p-6 rounded-lg text-center">
+                                    <div className="text-sm text-gray-600 mb-2">Última Senha Gerada</div>
+                                    <div className="text-6xl font-bold text-blue-900">{currentNumber - 1}</div>
+                                </div>
+
+                                <div className="mt-6">
+                                    <h3 className="font-bold text-lg mb-4">Fila de Espera ({patients.filter(p => p.status === 'waiting').length})</h3>
+                                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                                        {patients.filter(p => p.status === 'waiting').map(p => (
+                                            <div key={p.id} className="bg-gray-50 p-3 rounded flex justify-between items-center">
+                                                <div>
+                                                    <span className="font-bold text-blue-900">#{p.number}</span>
+                                                    <span className="ml-3">{p.name}</span>
+                                                    <span className="ml-2 text-sm text-gray-600">({p.age} anos)</span>
+                                                </div>
+                                                <span className={`text-xs px-2 py-1 rounded font-bold ${
+                                                    p.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                                                    p.priority === 'priority' ? 'bg-yellow-100 text-yellow-800' :
+                                                    'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                    {p.priority === 'urgent' ? '🚨 URGENTE' : 
+                                                     p.priority === 'priority' ? '⭐ PRIORITÁRIO' : '📋 Normal'}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Painel do Médico
+            const DoctorView = () => {
+                const [selectedPatient, setSelectedPatient] = useState(null);
+                const [diagnosis, setDiagnosis] = useState('');
+                const [needsExam, setNeedsExam] = useState(false);
+                const [examType, setExamType] = useState('');
+                const [prescription, setPrescription] = useState('');
+
+                const waitingPatients = patients.filter(p => p.status === 'waiting')
+                    .sort((a, b) => {
+                        if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
+                        if (b.priority === 'urgent' && a.priority !== 'urgent') return 1;
+                        if (a.priority === 'priority' && b.priority === 'normal') return -1;
+                        if (b.priority === 'priority' && a.priority === 'normal') return 1;
+                        return a.number - b.number;
+                    });
+
+                const consultingPatients = patients.filter(p => p.status === 'consulting');
+
+                const callPatient = (patient) => {
+                    const updated = {...patient, status: 'consulting'};
+                    updatePatient(updated);
+                    addCalledPatient(patient);
+                    setSelectedPatient(updated);
+                };
+
+                const sendToExam = () => {
+                    if (!examType) {
+                        alert('Selecione o tipo de exame!');
+                        return;
+                    }
+
+                    const rooms = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                    const occupiedRooms = patients.filter(p => p.examRoom).map(p => p.examRoom);
+                    const availableRoom = rooms.find(r => !occupiedRooms.includes(r)) || 1;
+
+                    const updated = {
+                        ...selectedPatient,
+                        status: 'exam',
+                        diagnosis,
+                        examType,
+                        examRoom: availableRoom
+                    };
+                    updatePatient(updated);
+                    setSelectedPatient(null);
+                    setDiagnosis('');
+                    setExamType('');
+                    alert(`✅ Paciente ${updated.name} enviado para Sala de Exame ${availableRoom}`);
+                };
+
+                const sendToPharmacy = () => {
+                    if (!prescription) {
+                        alert('Digite a receita médica!');
+                        return;
+                    }
+
+                    const updated = {
+                        ...selectedPatient,
+                        status: 'pharmacy',
+                        diagnosis,
+                        prescription
+                    };
+                    updatePatient(updated);
+                    setSelectedPatient(null);
+                    setDiagnosis('');
+                    setPrescription('');
+                    alert(`✅ Receita enviada para farmácia!`);
+                };
+
+                const completeConsultation = () => {
+                    const updated = {...selectedPatient, status: 'completed'};
+                    updatePatient(updated);
+                    setSelectedPatient(null);
+                    setDiagnosis('');
+                    alert('✅ Consulta finalizada!');
+                };
+
+                return (
+                    <div className="min-h-screen bg-green-50 p-4">
+                        <div className="max-w-6xl mx-auto">
+                            <button onClick={() => setView('menu')} className="mb-4 text-green-600 hover:underline font-bold">
+                                ← Voltar ao Menu
+                            </button>
+                            
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div className="bg-white rounded-lg shadow-xl p-6">
+                                    <h2 className="text-2xl font-bold text-green-900 mb-6">🩺 Painel do Médico</h2>
+                                    
+                                    {selectedPatient ? (
+                                        <div className="space-y-4">
+                                            <div className="bg-green-100 p-4 rounded-lg">
+                                                <h3 className="font-bold text-lg mb-2">Em Consulta</h3>
+                                                <div className="text-2xl font-bold text-green-900">#{selectedPatient.number} - {selectedPatient.name}</div>
+                                                <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
+                                                    <div><strong>Idade:</strong> {selectedPatient.age} anos</div>
+                                                    <div><strong>Peso:</strong> {selectedPatient.weight} kg</div>
+                                                    <div><strong>Temperatura:</strong> {selectedPatient.temperature}°C</div>
+                                                    <div><strong>PA:</strong> {selectedPatient.bloodPressure}</div>
+                                                    <div className="col-span-2"><strong>Sintomas:</strong> {selectedPatient.symptoms}</div>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-bold mb-2">Diagnóstico Preliminar</label>
+                                                <textarea value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)}
+                                                    className="w-full p-3 border border-gray-300 rounded-lg"
+                                                    rows="3" placeholder="Digite o diagnóstico..."></textarea>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <input type="checkbox" checked={needsExam} onChange={(e) => setNeedsExam(e.target.checked)}
+                                                    className="w-5 h-5" />
+                                                <label className="font-bold">Precisa de Exames?</label>
+                                            </div>
+
+                                            {needsExam && (
+                                                <div>
+                                                    <label className="block text-sm font-bold mb-2">Tipo de Exame</label>
+                                                    <select value={examType} onChange={(e) => setExamType(e.target.value)}
+                                                        className="w-full p-3 border border-gray-300 rounded-lg">
+                                                        <option value="">Selecione...</option>
+                                                        <option value="Hemograma Completo">Hemograma Completo</option>
+                                                        <option value="Raio-X">Raio-X</option>
+                                                        <option value="Ultrassom">Ultrassom</option>
+                                                        <option value="Eletrocardiograma">Eletrocardiograma</option>
+                                                        <option value="Teste COVID">Teste COVID</option>
+                                                        <option value="Glicemia">Glicemia</option>
+                                                    </select>
+                                                    <button onClick={sendToExam}
+                                                        className="w-full mt-2 bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-bold">
+                                                        🔬 Enviar para Sala de Exames
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {!needsExam && (
+                                                <div>
+                                                    <label className="block text-sm font-bold mb-2">Receita Médica</label>
+                                                    <textarea value={prescription} onChange={(e) => setPrescription(e.target.value)}
+                                                        className="w-full p-3 border border-gray-300 rounded-lg"
+                                                        rows="4" placeholder="Digite a receita médica..."></textarea>
+                                                    <button onClick={sendToPharmacy}
+                                                        className="w-full mt-2 bg-pink-600 hover:bg-pink-700 text-white py-3 rounded-lg font-bold">
+                                                        💊 Enviar para Farmácia
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            <button onClick={completeConsultation}
+                                                className="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-lg font-bold">
+                                                ✅ Finalizar sem Receita/Exame
+                                            </button>
+
+                                            <button onClick={() => setSelectedPatient(null)}
+                                                className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg">
+                                                Cancelar
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-gray-100 p-6 rounded-lg text-center text-gray-600">
+                                            Nenhum paciente em consulta
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="bg-white rounded-lg shadow-xl p-6">
+                                    <h3 className="font-bold text-lg mb-4">Fila de Espera ({waitingPatients.length})</h3>
+                                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                                        {waitingPatients.map((p, idx) => (
+                                            <div key={p.id} className="bg-gray-50 p-3 rounded">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <div>
+                                                        <span className="font-bold text-lg">#{p.number}</span>
+                                                        <span className="ml-2">{p.name}</span>
+                                                    </div>
+                                                    <button onClick={() => callPatient(p)} disabled={selectedPatient}
+                                                        className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded font-bold">
+                                                        Chamar
+                                                    </button>
+                                                </div>
+                                                <div className="text-xs text-gray-600">
+                                                    {p.age} anos • {p.temperature}°C • PA: {p.bloodPressure}
+                                                </div>
+                                                <div className="text-xs text-gray-700 mt-1">{p.symptoms}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-6">
+                                        <h3 className="font-bold text-lg mb-4">Aguardando Resultados de Exames</h3>
+                                        <div className="space-y-2">
+                                            {patients.filter(p => p.status === 'exam').map(p => (
+                                                <div key={p.id} className="bg-teal-50 p-3 rounded">
+                                                    <div className="font-bold">#{p.number} - {p.name}</div>
+                                                    <div className="text-sm">Sala {p.examRoom} - {p.examType}</div>
+                                                    {examResults[p.id] && (
+                                                        <div className="mt-2 p-2 bg-white rounded text-sm">
+                                                            <strong>Resultado:</strong> {examResults[p.id].result}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Sala de Exames
+            const ExamView = () => {
+                const [roomNumber, setRoomNumber] = useState('');
+                const [result, setResult] = useState('');
+
+                const examPatients = patients.filter(p => p.status === 'exam');
+                const myPatients = roomNumber ? examPatients.filter(p => p.examRoom === parseInt(roomNumber)) : [];
+
+                const submitResult = (patient) => {
+                    if (!result) {
+                        alert('Digite o resultado do exame!');
+                        return;
+                    }
+
+                    const examResult = {
+                        patientId: patient.id,
+                        examType: patient.examType,
+                        result: result,
+                        timestamp: new Date().toLocaleString('pt-BR')
+                    };
+
+                    saveExamResult(patient.id, examResult);
+                    alert('✅ Resultado enviado ao médico!');
+                    setResult('');
+                };
+
+                return (
+                    <div className="min-h-screen bg-teal-50 p-4">
+                        <div className="max-w-4xl mx-auto">
+                            <button onClick={() => setView('menu')} className="mb-4 text-teal-600 hover:underline font-bold">
+                                ← Voltar ao Menu
+                            </button>
+                          <div className="bg-white rounded-lg shadow-xl p-6">
+                                <h2 className="text-2xl font-bold text-teal-900 mb-6">🔬 Sala de Exames</h2>
+                                
+                                <div className="mb-6">
+                                    <label className="block text-sm font-bold mb-2">Número da Sala (1-10)</label>
+                                    <select value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)}
+                                        className="w-full p-3 border border-gray-300 rounded-lg">
+                                        <option value="">Selecione sua sala...</option>
+                                        {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                                            <option key={n} value={n}>Sala {n}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {roomNumber && (
+                                    <div>
+                                        <h3 className="font-bold text-lg mb-4">
+                                            Pacientes na Sala {roomNumber} ({myPatients.length})
+                                        </h3>
+                                        
+                                        {myPatients.length === 0 ? (
+                                            <div className="bg-gray-100 p-6 rounded-lg text-center text-gray-600">
+                                                Nenhum paciente aguardando nesta sala
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                {myPatients.map(p => (
+                                                    <div key={p.id} className="bg-teal-50 p-4 rounded-lg">
+                                                        <div className="flex justify-between items-start mb-3">
+                                                            <div>
+                                                                <div className="text-xl font-bold text-teal-900">
+                                                                    #{p.number} - {p.name}
+                                                                </div>
+                                                                <div className="text-sm text-gray-600 mt-1">
+                                                                    {p.age} anos • {p.weight} kg • {p.temperature}°C • PA: {p.bloodPressure}
+                                                                </div>
+                                                            </div>
+                                                            <span className="bg-teal-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                                                                Sala {p.examRoom}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="bg-white p-3 rounded mb-3">
+                                                            <div className="text-sm font-bold text-gray-700">Exame Solicitado:</div>
+                                                            <div className="text-lg font-bold text-teal-900">{p.examType}</div>
+                                                            {p.diagnosis && (
+                                                                <div className="mt-2 text-sm text-gray-600">
+                                                                    <strong>Diagnóstico Preliminar:</strong> {p.diagnosis}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {examResults[p.id] ? (
+                                                            <div className="bg-green-100 p-3 rounded">
+                                                                <div className="font-bold text-green-900">✅ Resultado Enviado</div>
+                                                                <div className="text-sm mt-1">{examResults[p.id].result}</div>
+                                                                <div className="text-xs text-gray-600 mt-1">
+                                                                    {examResults[p.id].timestamp}
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div>
+                                                                <label className="block text-sm font-bold mb-2">
+                                                                    Resultado do Exame
+                                                                </label>
+                                                                <textarea
+                                                                    value={result}
+                                                                    onChange={(e) => setResult(e.target.value)}
+                                                                    className="w-full p-3 border border-gray-300 rounded-lg mb-2"
+                                                                    rows="4"
+                                                                    placeholder="Digite o resultado detalhado do exame..."
+                                                                />
+                                                                <button
+                                                                    onClick={() => submitResult(p)}
+                                                                    className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-bold">
+                                                                    📋 Enviar Resultado ao Médico
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="mt-6 bg-teal-100 p-4 rounded-lg">
+                                    <h3 className="font-bold mb-3">Todas as Salas Ocupadas</h3>
+                                    <div className="grid grid-cols-5 gap-2">
+                                        {[1,2,3,4,5,6,7,8,9,10].map(room => {
+                                            const hasPatient = examPatients.some(p => p.examRoom === room);
+                                            return (
+                                                <div key={room} className={`p-2 rounded text-center font-bold ${
+                                                    hasPatient ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
+                                                }`}>
+                                                    Sala {room}
+                                                    <div className="text-xs">{hasPatient ? '🔴 Ocupada' : '🟢 Livre'}</div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Painel da Farmácia
+            const PharmacyView = () => {
+                const pharmacyPatients = patients.filter(p => p.status === 'pharmacy');
+
+                const deliverMedicine = (patient) => {
+                    const updated = {...patient, status: 'completed'};
+                    updatePatient(updated);
+                    alert(`✅ Medicamentos entregues a ${patient.name}`);
+                };
+
+                return (
+                    <div className="min-h-screen bg-pink-50 p-4">
+                        <div className="max-w-5xl mx-auto">
+                            <button onClick={() => setView('menu')} className="mb-4 text-pink-600 hover:underline font-bold">
+                                ← Voltar ao Menu
+                            </button>
+                            
+                            <div className="bg-white rounded-lg shadow-xl p-6">
+                                <h2 className="text-2xl font-bold text-pink-900 mb-6">💊 Farmácia - Receitas Médicas</h2>
+                                
+                                {pharmacyPatients.length === 0 ? (
+                                    <div className="bg-gray-100 p-8 rounded-lg text-center text-gray-600">
+                                        Nenhuma receita pendente no momento
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {pharmacyPatients.map(p => (
+                                            <div key={p.id} className="bg-pink-50 p-4 rounded-lg border-2 border-pink-200">
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <div>
+                                                        <div className="text-2xl font-bold text-pink-900">
+                                                            #{p.number} - {p.name}
+                                                        </div>
+                                                        <div className="text-sm text-gray-600 mt-1">
+                                                            {p.age} anos • Chegou às {p.timestamp}
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => deliverMedicine(p)}
+                                                        className="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-lg font-bold">
+                                                        ✅ Entregar Medicamentos
+                                                    </button>
+                                                </div>
+
+                                                {p.diagnosis && (
+                                                    <div className="bg-white p-3 rounded mb-3">
+                                                        <div className="text-sm font-bold text-gray-700">Diagnóstico:</div>
+                                                        <div className="text-gray-900">{p.diagnosis}</div>
+                                                    </div>
+                                                )}
+
+                                                <div className="bg-white p-4 rounded border border-pink-300">
+                                                    <div className="text-sm font-bold text-pink-900 mb-2">
+                                                        📝 RECEITA MÉDICA
+                                                    </div>
+                                                    <div className="whitespace-pre-wrap text-gray-900">
+                                                        {p.prescription}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="mt-6 bg-pink-100 p-4 rounded-lg">
+                                    <h3 className="font-bold mb-2">Estatísticas da Farmácia</h3>
+                                    <div className="grid grid-cols-3 gap-4 text-center">
+                                        <div>
+                                            <div className="text-3xl font-bold text-pink-600">
+                                                {pharmacyPatients.length}
+                                            </div>
+                                            <div className="text-sm text-gray-600">Aguardando</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-3xl font-bold text-green-600">
+                                                {patients.filter(p => p.status === 'completed' && p.prescription).length}
+                                            </div>
+                                            <div className="text-sm text-gray-600">Atendidos Hoje</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-3xl font-bold text-blue-600">
+                                                {patients.filter(p => p.prescription).length}
+                                            </div>
+                                            <div className="text-sm text-gray-600">Total de Receitas</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Painel Público (TV)
+            const DisplayView = () => {
+                const lastCalled = calledPatients[0];
+
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-purple-900 to-purple-700 p-8">
+                        <div className="max-w-7xl mx-auto">
+                            <button onClick={() => setView('menu')} className="mb-4 text-white hover:underline font-bold">
+                                ← Voltar ao Menu
+                            </button>
+                            
+                            <div className="bg-white rounded-3xl shadow-2xl p-8 mb-6">
+                                <div className="text-center mb-8">
+                                    <h1 className="text-5xl font-bold text-purple-900 mb-2">
+                                        🏥 Posto de Saúde
+                                    </h1>
+                                    <div className="text-2xl text-gray-600">Painel de Chamadas</div>
+                                    <div className="text-lg text-gray-500 mt-2">
+                                        {new Date().toLocaleDateString('pt-BR', { 
+                                            weekday: 'long', 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric' 
+                                        })}
+                                    </div>
+                                </div>
+
+                                {lastCalled && (
+                                    <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-12 rounded-2xl mb-8 animate-pulse">
+                                        <div className="text-center text-white">
+                                            <div className="text-3xl mb-4">CHAMANDO SENHA</div>
+                                            <div className="text-9xl font-bold mb-4">#{lastCalled.number}</div>
+                                            <div className="text-4xl font-bold">{lastCalled.name}</div>
+                                            <div className="text-2xl mt-4 opacity-90">
+                                                Dirija-se ao consultório médico
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div className="bg-blue-50 p-6 rounded-xl">
+                                        <h3 className="text-2xl font-bold text-blue-900 mb-4">
+                                            🔵 Aguardando Consulta ({patients.filter(p => p.status === 'waiting').length})
+                                        </h3>
+                                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                                            {patients.filter(p => p.status === 'waiting').slice(0, 10).map(p => (
+                                                <div key={p.id} className="bg-white p-4 rounded-lg flex justify-between items-center shadow">
+                                                    <span className="text-3xl font-bold text-blue-900">#{p.number}</span>
+                                                    <span className="text-xl">{p.name}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-teal-50 p-6 rounded-xl">
+                                        <h3 className="text-2xl font-bold text-teal-900 mb-4">
+                                            🔬 Em Exames ({patients.filter(p => p.status === 'exam').length})
+                                        </h3>
+                                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                                            {patients.filter(p => p.status === 'exam').map(p => (
+                                                <div key={p.id} className="bg-white p-4 rounded-lg shadow">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-2xl font-bold text-teal-900">#{p.number}</span>
+                                                        <span className="text-xl">{p.name}</span>
+                                                    </div>
+                                                    <div className="text-sm text-gray-600 mt-2">
+                                                        📍 Sala de Exame {p.examRoom} - {p.examType}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-6 bg-pink-50 p-6 rounded-xl">
+                                    <h3 className="text-2xl font-bold text-pink-900 mb-4">
+                                        💊 Aguardando na Farmácia ({patients.filter(p => p.status === 'pharmacy').length})
+                                    </h3>
+                                    <div className="grid grid-cols-5 gap-3">
+                                        {patients.filter(p => p.status === 'pharmacy').map(p => (
+                                            <div key={p.id} className="bg-white p-3 rounded-lg text-center shadow">
+                                                <div className="text-2xl font-bold text-pink-900">#{p.number}</div>
+                                                <div className="text-sm text-gray-600 truncate">{p.name}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="mt-6 grid grid-cols-2 gap-4">
+                                    <div className="bg-gradient-to-br from-green-400 to-green-600 p-6 rounded-xl text-white text-center">
+                                        <div className="text-5xl font-bold">{patients.filter(p => p.status === 'consulting').length}</div>
+                                        <div className="text-xl mt-2">Em Consulta</div>
+                                    </div>
+                                    <div className="bg-gradient-to-br from-gray-400 to-gray-600 p-6 rounded-xl text-white text-center">
+                                        <div className="text-5xl font-bold">{patients.filter(p => p.status === 'completed').length}</div>
+                                        <div className="text-xl mt-2">Atendidos Hoje</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-purple-800 text-white p-6 rounded-2xl text-center">
+                                <div className="text-2xl font-bold">🕐 Horário de Atendimento: 8h às 17h</div>
+                                <div className="text-lg mt-2 opacity-90">
+                                    Em caso de emergência, dirija-se diretamente ao pronto-socorro
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Painel do Paciente
+            const PatientView = () => {
+                const [searchNumber, setSearchNumber] = useState('');
+                const [foundPatient, setFoundPatient] = useState(null);
+
+                const searchPatient = () => {
+                    const patient = patients.find(p => p.number === parseInt(searchNumber));
+                    if (patient) {
+                        setFoundPatient(patient);
+                    } else {
+                        alert('Senha não encontrada!');
+                        setFoundPatient(null);
+                    }
+                };
+
+                const getStatusMessage = (patient) => {
+                    switch(patient.status) {
+                        case 'waiting':
+                            const ahead = patients.filter(p => 
+                                p.status === 'waiting' && 
+                                (p.priority === 'urgent' || 
+                                (p.priority === 'priority' && patient.priority === 'normal') ||
+                                (p.priority === patient.priority && p.number < patient.number))
+                            ).length;
+                            return {
+                                status: '⏳ Aguardando na Fila',
+                                message: `Há ${ahead} pessoa(s) à sua frente`,
+                                color: 'bg-blue-100 text-blue-900',
+                                location: 'Permaneça na sala de espera'
+                            };
+                        case 'consulting':
+                            return {
+                                status: '🩺 Em Consulta Médica',
+                                message: 'Você está sendo atendido agora',
+                                color: 'bg-green-100 text-green-900',
+                                location: 'Consultório Médico'
+                            };
+                        case 'exam':
+                            return {
+                                status: '🔬 Exame em Andamento',
+                                message: `Exame: ${patient.examType}`,
+                                color: 'bg-teal-100 text-teal-900',
+                                location: `Dirija-se à Sala de Exame ${patient.examRoom}`
+                            };
+                        case 'pharmacy':
+                            return {
+                                status: '💊 Aguardando na Farmácia',
+                                message: 'Sua receita está pronta',
+                                color: 'bg-pink-100 text-pink-900',
+                                location: 'Dirija-se à Farmácia'
+                            };
+                        case 'completed':
+                            return {
+                                status: '✅ Atendimento Concluído',
+                                message: 'Obrigado pela visita!',
+                                color: 'bg-gray-100 text-gray-900',
+                                location: 'Atendimento finalizado'
+                            };
+                        default:
+                            return {
+                                status: 'Status desconhecido',
+                                message: '',
+                                color: 'bg-gray-100',
+                                location: ''
+                            };
+                    }
+                };
+
+                return (
+                    <div className="min-h-screen bg-orange-50 p-4">
+                        <div className="max-w-2xl mx-auto">
+                            <button onClick={() => setView('menu')} className="mb-4 text-orange-600 hover:underline font-bold">
+                                ← Voltar ao Menu
+                            </button>
+                            
+                            <div className="bg-white rounded-lg shadow-xl p-6">
+                                <h2 className="text-2xl font-bold text-orange-900 mb-6 text-center">
+                                    📱 Acompanhamento do Paciente
+                                </h2>
+                                
+                                <div className="mb-6">
+                                    <label className="block text-sm font-bold mb-2">Digite o Número da Sua Senha</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="number"
+                                            value={searchNumber}
+                                            onChange={(e) => setSearchNumber(e.target.value)}
+                                            className="flex-1 p-4 border-2 border-orange-300 rounded-lg text-2xl text-center font-bold"
+                                            placeholder="000"
+                                        />
+                                        <button
+                                            onClick={searchPatient}
+                                            className="bg-orange-600 hover:bg-orange-700 text-white px-8 rounded-lg font-bold">
+                                            Buscar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {foundPatient && (
+                                    <div className="space-y-4">
+                                        <div className="bg-orange-100 p-6 rounded-lg text-center">
+                                            <div className="text-6xl font-bold text-orange-900 mb-2">
+                                                #{foundPatient.number}
+                                            </div>
+                                            <div className="text-2xl font-bold text-orange-900">
+                                                {foundPatient.name}
+                                            </div>
+                                        </div>
+
+                                        <div className={`p-6 rounded-lg ${getStatusMessage(foundPatient).color}`}>
+                                            <div className="text-3xl font-bold mb-2">
+                                                {getStatusMessage(foundPatient).status}
+                                            </div>
+                                            <div className="text-lg mb-2">
+                                                {getStatusMessage(foundPatient).message}
+                                            </div>
+                                            <div className="text-xl font-bold mt-4">
+                                                📍 {getStatusMessage(foundPatient).location}
+                                            </div>
+                                        </div>
+
+                                        {foundPatient.status === 'exam' && examResults[foundPatient.id] && (
+                                            <div className="bg-green-100 p-4 rounded-lg">
+                                                <div className="font-bold text-green-900 mb-2">
+                                                    ✅ Exame Concluído
+                                                </div>
+                                                <div className="text-sm text-gray-700">
+                                                    Retorne ao consultório médico para avaliação
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {foundPatient.diagnosis && (
+                                            <div className="bg-gray-100 p-4 rounded-lg">
+                                                <div className="font-bold text-gray-900 mb-2">Informações:</div>
+                                                <div className="text-sm">{foundPatient.diagnosis}</div>
+                                            </div>
+                                        )}
+
+                                        <div className="bg-blue-50 p-4 rounded-lg text-sm">
+                                            <div className="font-bold mb-2">⏰ Hora de Chegada:</div>
+                                            <div>{foundPatient.timestamp}</div>
+                                        </div>
+
+                                        <div className="bg-yellow-50 p-4 rounded-lg text-sm text-center">
+                                            <div className="font-bold mb-1">💡 Dica</div>
+                                            <div>Mantenha-se próximo das telas de chamada e fique atento ao seu número</div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!foundPatient && searchNumber && (
+                                    <div className="bg-gray-100 p-8 rounded-lg text-center text-gray-600">
+                                        Nenhum paciente encontrado com essa senha
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Renderização Principal
+            return (
+                <div>
+                    {view === 'menu' && <MenuView />}
+                    {view === 'reception' && <ReceptionView />}
+                    {view === 'doctor' && <DoctorView />}
+                    {view === 'exam' && <ExamView />}
+                    {view === 'pharmacy' && <PharmacyView />}
+                    {view === 'display' && <DisplayView />}
+                    {view === 'patient' && <PatientView />}
+                </div>
+            );
+        };
+
+        ReactDOM.render(<ClinicQueueSystem />, document.getElementById('root'));
+    </script>
+</body>
+</html>
