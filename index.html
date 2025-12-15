@@ -342,6 +342,15 @@
                 const [examType, setExamType] = useState('');
                 const [prescription, setPrescription] = useState('');
 
+                useEffect(() => {
+    if (selectedPatient) {
+        const updated = patients.find(p => p.id === selectedPatient.id);
+        if (updated) {
+            setSelectedPatient(updated);
+        }
+    }
+}, [patients]);
+
                 const waitingPatients = patients.filter(p => p.status === 'waiting')
                     .sort((a, b) => {
                         if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
