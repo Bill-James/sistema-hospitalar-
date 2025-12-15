@@ -443,6 +443,34 @@
                                             </div>
                                         ))}
                                     </div>
+                                    <div className="mt-6">
+    <h3 className="font-bold mb-4 text-blue-900">🔄 Retornaram do Exame</h3>
+    {patients.filter(p => p.status === 'exam' && examResults[p.id]).map(p => (
+        <div key={p.id} className="bg-blue-50 p-3 rounded mb-2 border-2 border-blue-300">
+            <div className="flex justify-between items-center">
+                <div>
+                    <div className="font-bold">#{p.number} - {p.name}</div>
+                    <div className="text-sm text-gray-600">
+                        {p.examType} - ✅ Resultado pronto
+                    </div>
+                </div>
+                <button 
+                    onClick={() => {
+                        if (selectedPatient) {
+                            alert('Finalize o atendimento atual primeiro!');
+                            return;
+                        }
+                        updatePatient({...p, status: 'consulting', examRoom: null});
+                        addCalledPatient(p);
+                    }}
+                    disabled={selectedPatient !== null}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded font-bold">
+                    Chamar
+                </button>
+            </div>
+        </div>
+    ))}
+</div>
 
                                     <div className="mt-6">
                                         <h3 className="font-bold mb-4">Aguardando Exames</h3>
