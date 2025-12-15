@@ -17,7 +17,7 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // Configuração do Firebase - SUBSTITUA COM SUAS CREDENCIAIS
+        // Configuração do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyC9UvNolXo5KQKVQD3MQ2NekWSCr1hn1sM",
             authDomain: "sistema-hospitalar-a6345.firebaseapp.com",
@@ -41,7 +41,6 @@
             const [calledPatients, setCalledPatients] = useState([]);
             const [examResults, setExamResults] = useState({});
 
-            // Sincronização em tempo real com Firebase
             useEffect(() => {
                 const patientsRef = db.ref('patients');
                 const calledRef = db.ref('calledPatients');
@@ -50,30 +49,22 @@
 
                 patientsRef.on('value', (snapshot) => {
                     const data = snapshot.val();
-                    if (data) {
-                        setPatients(Object.values(data));
-                    }
+                    setPatients(data ? Object.values(data) : []);
                 });
 
                 calledRef.on('value', (snapshot) => {
                     const data = snapshot.val();
-                    if (data) {
-                        setCalledPatients(Object.values(data));
-                    }
+                    setCalledPatients(data ? Object.values(data) : []);
                 });
 
                 counterRef.on('value', (snapshot) => {
                     const data = snapshot.val();
-                    if (data) {
-                        setCurrentNumber(data);
-                    }
+                    if (data) setCurrentNumber(data);
                 });
 
                 examRef.on('value', (snapshot) => {
                     const data = snapshot.val();
-                    if (data) {
-                        setExamResults(data);
-                    }
+                    setExamResults(data || {});
                 });
 
                 return () => {
@@ -181,22 +172,12 @@
                 </div>
             );
 
-            // Painel de Recepção
+            // Recepção
             const ReceptionView = () => {
                 const [formData, setFormData] = useState({
-                    name: '',
-                    age: '',
-                    weight: '',
-                    address: '',
-                    temperature: '',
-                    bloodPressure: '',
-                    symptoms: '',
-                    priority: 'normal'
+                    name: '', age: '', weight: '', address: '',
+                    temperature: '', bloodPressure: '', symptoms: '', priority: 'normal'
                 });
-
-                const handleChange = (e) => {
-                    setFormData({...formData, [e.target.name]: e.target.value});
-                };
 
                 const addPatient = () => {
                     if (!formData.name.trim() || !formData.age) {
@@ -222,111 +203,79 @@
                         temperature: '', bloodPressure: '', symptoms: '', priority: 'normal'
                     });
                     
-                    alert(`✅ Senha ${currentNumber} gerada para ${formData.name}\nDirigir-se à sala de espera`);
+                    alert(`✅ Senha ${currentNumber} gerada para ${formData.name}`);
                 };
 
                 return (
                     <div className="min-h-screen bg-blue-50 p-4">
                         <div className="max-w-3xl mx-auto">
-                            <button onClick={() => setView('menu')} className="mb-4 text-blue-600 hover:underline font-bold">
-                                ← Voltar ao Menu
-                            </button>
+                            <button onClick={() => setView('menu')} className="mb-4 text-blue-600 hover:underline font-bold">← Voltar</button>
                             
                             <div className="bg-white rounded-lg shadow-xl p-6">
-                                <h2 className="text-2xl font-bold text-blue-900 mb-6">📋 Recepção - Triagem de Pacientes</h2>
+                                <h2 className="text-2xl font-bold text-blue-900 mb-6">📋 Recepção - Triagem</h2>
                                 
                                 <div className="grid md:grid-cols-2 gap-4 mb-4">
                                     <div>
                                         <label className="block text-sm font-bold mb-2">Nome Completo *</label>
-                                        <input type="text" name="name" value={formData.name} onChange={handleChange}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                            placeholder="Nome do paciente" />
+                                        <input type="text" name="name" value={formData.name} 
+                                            onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                            className="w-full p-3 border rounded-lg" placeholder="Nome" />
                                     </div>
-
                                     <div>
                                         <label className="block text-sm font-bold mb-2">Idade *</label>
-                                        <input type="number" name="age" value={formData.age} onChange={handleChange}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                            placeholder="Anos" />
+                                        <input type="number" name="age" value={formData.age}
+                                            onChange={(e) => setFormData({...formData, age: e.target.value})}
+                                            className="w-full p-3 border rounded-lg" />
                                     </div>
-
                                     <div>
                                         <label className="block text-sm font-bold mb-2">Peso (kg)</label>
-                                        <input type="number" name="weight" value={formData.weight} onChange={handleChange}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                            placeholder="Peso" />
+                                        <input type="number" value={formData.weight}
+                                            onChange={(e) => setFormData({...formData, weight: e.target.value})}
+                                            className="w-full p-3 border rounded-lg" />
                                     </div>
-
                                     <div>
                                         <label className="block text-sm font-bold mb-2">Temperatura (°C)</label>
-                                        <input type="number" step="0.1" name="temperature" value={formData.temperature} onChange={handleChange}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                            placeholder="36.5" />
+                                        <input type="number" step="0.1" value={formData.temperature}
+                                            onChange={(e) => setFormData({...formData, temperature: e.target.value})}
+                                            className="w-full p-3 border rounded-lg" />
                                     </div>
-
                                     <div>
                                         <label className="block text-sm font-bold mb-2">Pressão Arterial</label>
-                                        <input type="text" name="bloodPressure" value={formData.bloodPressure} onChange={handleChange}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                            placeholder="120/80" />
+                                        <input type="text" value={formData.bloodPressure}
+                                            onChange={(e) => setFormData({...formData, bloodPressure: e.target.value})}
+                                            className="w-full p-3 border rounded-lg" placeholder="120/80" />
                                     </div>
-
                                     <div>
                                         <label className="block text-sm font-bold mb-2">Prioridade</label>
-                                        <select name="priority" value={formData.priority} onChange={handleChange}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <select value={formData.priority}
+                                            onChange={(e) => setFormData({...formData, priority: e.target.value})}
+                                            className="w-full p-3 border rounded-lg">
                                             <option value="normal">Normal</option>
-                                            <option value="priority">Prioritário (Idoso/Gestante)</option>
+                                            <option value="priority">Prioritário</option>
                                             <option value="urgent">Urgente</option>
                                         </select>
                                     </div>
-
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-bold mb-2">Morada</label>
-                                        <input type="text" name="address" value={formData.address} onChange={handleChange}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                            placeholder="Endereço completo" />
+                                        <input type="text" value={formData.address}
+                                            onChange={(e) => setFormData({...formData, address: e.target.value})}
+                                            className="w-full p-3 border rounded-lg" />
                                     </div>
-
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-bold mb-2">Sintomas</label>
-                                        <textarea name="symptoms" value={formData.symptoms} onChange={handleChange}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                            rows="3" placeholder="Descreva os sintomas do paciente"></textarea>
+                                        <textarea value={formData.symptoms}
+                                            onChange={(e) => setFormData({...formData, symptoms: e.target.value})}
+                                            className="w-full p-3 border rounded-lg" rows="3"></textarea>
                                     </div>
                                 </div>
 
-                                <button onClick={addPatient}
-                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-lg font-bold text-lg transition">
-                                    🎫 Gerar Senha e Registrar Paciente
+                                <button onClick={addPatient} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-lg font-bold">
+                                    🎫 Gerar Senha
                                 </button>
 
                                 <div className="mt-6 bg-blue-100 p-6 rounded-lg text-center">
-                                    <div className="text-sm text-gray-600 mb-2">Última Senha Gerada</div>
+                                    <div className="text-sm text-gray-600">Última Senha</div>
                                     <div className="text-6xl font-bold text-blue-900">{currentNumber - 1}</div>
-                                </div>
-
-                                <div className="mt-6">
-                                    <h3 className="font-bold text-lg mb-4">Fila de Espera ({patients.filter(p => p.status === 'waiting').length})</h3>
-                                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                                        {patients.filter(p => p.status === 'waiting').map(p => (
-                                            <div key={p.id} className="bg-gray-50 p-3 rounded flex justify-between items-center">
-                                                <div>
-                                                    <span className="font-bold text-blue-900">#{p.number}</span>
-                                                    <span className="ml-3">{p.name}</span>
-                                                    <span className="ml-2 text-sm text-gray-600">({p.age} anos)</span>
-                                                </div>
-                                                <span className={`text-xs px-2 py-1 rounded font-bold ${
-                                                    p.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                                                    p.priority === 'priority' ? 'bg-yellow-100 text-yellow-800' :
-                                                    'bg-gray-100 text-gray-800'
-                                                }`}>
-                                                    {p.priority === 'urgent' ? '🚨 URGENTE' : 
-                                                     p.priority === 'priority' ? '⭐ PRIORITÁRIO' : '📋 Normal'}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -334,22 +283,14 @@
                 );
             };
 
-            // Painel do Médico
+            // Médico - VERSÃO CORRIGIDA
             const DoctorView = () => {
-                const [selectedPatient, setSelectedPatient] = useState(null);
                 const [diagnosis, setDiagnosis] = useState('');
                 const [needsExam, setNeedsExam] = useState(false);
                 const [examType, setExamType] = useState('');
                 const [prescription, setPrescription] = useState('');
 
-                useEffect(() => {
-    if (selectedPatient) {
-        const updated = patients.find(p => p.id === selectedPatient.id);
-        if (updated) {
-            setSelectedPatient(updated);
-        }
-    }
-}, [patients]);
+                const selectedPatient = patients.find(p => p.status === 'consulting') || null;
 
                 const waitingPatients = patients.filter(p => p.status === 'waiting')
                     .sort((a, b) => {
@@ -360,62 +301,51 @@
                         return a.number - b.number;
                     });
 
-                const consultingPatients = patients.filter(p => p.status === 'consulting');
-
                 const callPatient = (patient) => {
-                    const updated = {...patient, status: 'consulting'};
-                    updatePatient(updated);
+                    if (selectedPatient) {
+                        alert('Finalize o atendimento atual primeiro!');
+                        return;
+                    }
+                    updatePatient({...patient, status: 'consulting'});
                     addCalledPatient(patient);
-                    setSelectedPatient(updated);
                 };
 
                 const sendToExam = () => {
-                    if (!examType) {
-                        alert('Selecione o tipo de exame!');
-                        return;
-                    }
-
-                    const rooms = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                    if (!examType) return alert('Selecione o tipo de exame!');
+                    
+                    const rooms = [1,2,3,4,5,6,7,8,9,10];
                     const occupiedRooms = patients.filter(p => p.examRoom).map(p => p.examRoom);
                     const availableRoom = rooms.find(r => !occupiedRooms.includes(r)) || 1;
 
-                    const updated = {
+                    updatePatient({
                         ...selectedPatient,
                         status: 'exam',
                         diagnosis,
                         examType,
                         examRoom: availableRoom
-                    };
-                    updatePatient(updated);
-                    setSelectedPatient(null);
+                    });
                     setDiagnosis('');
                     setExamType('');
-                    alert(`✅ Paciente ${updated.name} enviado para Sala de Exame ${availableRoom}`);
+                    setNeedsExam(false);
+                    alert(`✅ Enviado para Sala ${availableRoom}`);
                 };
 
                 const sendToPharmacy = () => {
-                    if (!prescription) {
-                        alert('Digite a receita médica!');
-                        return;
-                    }
-
-                    const updated = {
+                    if (!prescription) return alert('Digite a receita!');
+                    
+                    updatePatient({
                         ...selectedPatient,
                         status: 'pharmacy',
                         diagnosis,
                         prescription
-                    };
-                    updatePatient(updated);
-                    setSelectedPatient(null);
+                    });
                     setDiagnosis('');
                     setPrescription('');
-                    alert(`✅ Receita enviada para farmácia!`);
+                    alert('✅ Enviado para farmácia!');
                 };
 
                 const completeConsultation = () => {
-                    const updated = {...selectedPatient, status: 'completed'};
-                    updatePatient(updated);
-                    setSelectedPatient(null);
+                    updatePatient({...selectedPatient, status: 'completed'});
                     setDiagnosis('');
                     alert('✅ Consulta finalizada!');
                 };
@@ -423,9 +353,7 @@
                 return (
                     <div className="min-h-screen bg-green-50 p-4">
                         <div className="max-w-6xl mx-auto">
-                            <button onClick={() => setView('menu')} className="mb-4 text-green-600 hover:underline font-bold">
-                                ← Voltar ao Menu
-                            </button>
+                            <button onClick={() => setView('menu')} className="mb-4 text-green-600 hover:underline font-bold">← Voltar</button>
                             
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="bg-white rounded-lg shadow-xl p-6">
@@ -434,71 +362,57 @@
                                     {selectedPatient ? (
                                         <div className="space-y-4">
                                             <div className="bg-green-100 p-4 rounded-lg">
-                                                <h3 className="font-bold text-lg mb-2">Em Consulta</h3>
+                                                <h3 className="font-bold text-lg">Em Consulta</h3>
                                                 <div className="text-2xl font-bold text-green-900">#{selectedPatient.number} - {selectedPatient.name}</div>
                                                 <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
                                                     <div><strong>Idade:</strong> {selectedPatient.age} anos</div>
                                                     <div><strong>Peso:</strong> {selectedPatient.weight} kg</div>
-                                                    <div><strong>Temperatura:</strong> {selectedPatient.temperature}°C</div>
+                                                    <div><strong>Temp:</strong> {selectedPatient.temperature}°C</div>
                                                     <div><strong>PA:</strong> {selectedPatient.bloodPressure}</div>
                                                     <div className="col-span-2"><strong>Sintomas:</strong> {selectedPatient.symptoms}</div>
                                                 </div>
                                             </div>
 
                                             <div>
-                                                <label className="block text-sm font-bold mb-2">Diagnóstico Preliminar</label>
+                                                <label className="block font-bold mb-2">Diagnóstico</label>
                                                 <textarea value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)}
-                                                    className="w-full p-3 border border-gray-300 rounded-lg"
-                                                    rows="3" placeholder="Digite o diagnóstico..."></textarea>
+                                                    className="w-full p-3 border rounded-lg" rows="3"></textarea>
                                             </div>
 
                                             <div className="flex items-center gap-2">
-                                                <input type="checkbox" checked={needsExam} onChange={(e) => setNeedsExam(e.target.checked)}
-                                                    className="w-5 h-5" />
+                                                <input type="checkbox" checked={needsExam} onChange={(e) => setNeedsExam(e.target.checked)} className="w-5 h-5" />
                                                 <label className="font-bold">Precisa de Exames?</label>
                                             </div>
 
                                             {needsExam && (
                                                 <div>
-                                                    <label className="block text-sm font-bold mb-2">Tipo de Exame</label>
-                                                    <select value={examType} onChange={(e) => setExamType(e.target.value)}
-                                                        className="w-full p-3 border border-gray-300 rounded-lg">
+                                                    <select value={examType} onChange={(e) => setExamType(e.target.value)} className="w-full p-3 border rounded-lg mb-2">
                                                         <option value="">Selecione...</option>
-                                                        <option value="Hemograma Completo">Hemograma Completo</option>
+                                                        <option value="Hemograma">Hemograma</option>
                                                         <option value="Raio-X">Raio-X</option>
                                                         <option value="Ultrassom">Ultrassom</option>
-                                                        <option value="Eletrocardiograma">Eletrocardiograma</option>
-                                                        <option value="Teste COVID">Teste COVID</option>
-                                                        <option value="Glicemia">Glicemia</option>
+                                                        <option value="ECG">ECG</option>
+                                                        <option value="COVID">Teste COVID</option>
                                                     </select>
-                                                    <button onClick={sendToExam}
-                                                        className="w-full mt-2 bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-bold">
-                                                        🔬 Enviar para Sala de Exames
+                                                    <button onClick={sendToExam} className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-bold">
+                                                        🔬 Enviar para Exame
                                                     </button>
                                                 </div>
                                             )}
 
                                             {!needsExam && (
                                                 <div>
-                                                    <label className="block text-sm font-bold mb-2">Receita Médica</label>
+                                                    <label className="block font-bold mb-2">Receita Médica</label>
                                                     <textarea value={prescription} onChange={(e) => setPrescription(e.target.value)}
-                                                        className="w-full p-3 border border-gray-300 rounded-lg"
-                                                        rows="4" placeholder="Digite a receita médica..."></textarea>
-                                                    <button onClick={sendToPharmacy}
-                                                        className="w-full mt-2 bg-pink-600 hover:bg-pink-700 text-white py-3 rounded-lg font-bold">
+                                                        className="w-full p-3 border rounded-lg mb-2" rows="4"></textarea>
+                                                    <button onClick={sendToPharmacy} className="w-full bg-pink-600 hover:bg-pink-700 text-white py-3 rounded-lg font-bold">
                                                         💊 Enviar para Farmácia
                                                     </button>
                                                 </div>
                                             )}
 
-                                            <button onClick={completeConsultation}
-                                                className="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-lg font-bold">
-                                                ✅ Finalizar sem Receita/Exame
-                                            </button>
-
-                                            <button onClick={() => setSelectedPatient(null)}
-                                                className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg">
-                                                Cancelar
+                                            <button onClick={completeConsultation} className="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-lg font-bold">
+                                                ✅ Finalizar Consulta
                                             </button>
                                         </div>
                                     ) : (
@@ -511,14 +425,14 @@
                                 <div className="bg-white rounded-lg shadow-xl p-6">
                                     <h3 className="font-bold text-lg mb-4">Fila de Espera ({waitingPatients.length})</h3>
                                     <div className="space-y-2 max-h-96 overflow-y-auto">
-                                        {waitingPatients.map((p, idx) => (
+                                        {waitingPatients.map(p => (
                                             <div key={p.id} className="bg-gray-50 p-3 rounded">
                                                 <div className="flex justify-between items-center mb-2">
                                                     <div>
                                                         <span className="font-bold text-lg">#{p.number}</span>
                                                         <span className="ml-2">{p.name}</span>
                                                     </div>
-                                                    <button onClick={() => callPatient(p)} disabled={selectedPatient}
+                                                    <button onClick={() => callPatient(p)} disabled={selectedPatient !== null}
                                                         className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded font-bold">
                                                         Chamar
                                                     </button>
@@ -526,26 +440,23 @@
                                                 <div className="text-xs text-gray-600">
                                                     {p.age} anos • {p.temperature}°C • PA: {p.bloodPressure}
                                                 </div>
-                                                <div className="text-xs text-gray-700 mt-1">{p.symptoms}</div>
                                             </div>
                                         ))}
                                     </div>
 
                                     <div className="mt-6">
-                                        <h3 className="font-bold text-lg mb-4">Aguardando Resultados de Exames</h3>
-                                        <div className="space-y-2">
-                                            {patients.filter(p => p.status === 'exam').map(p => (
-                                                <div key={p.id} className="bg-teal-50 p-3 rounded">
-                                                    <div className="font-bold">#{p.number} - {p.name}</div>
-                                                    <div className="text-sm">Sala {p.examRoom} - {p.examType}</div>
-                                                    {examResults[p.id] && (
-                                                        <div className="mt-2 p-2 bg-white rounded text-sm">
-                                                            <strong>Resultado:</strong> {examResults[p.id].result}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
+                                        <h3 className="font-bold mb-4">Aguardando Exames</h3>
+                                        {patients.filter(p => p.status === 'exam').map(p => (
+                                            <div key={p.id} className="bg-teal-50 p-3 rounded mb-2">
+                                                <div className="font-bold">#{p.number} - {p.name}</div>
+                                                <div className="text-sm">Sala {p.examRoom} - {p.examType}</div>
+                                                {examResults[p.id] && (
+                                                    <div className="mt-2 p-2 bg-white rounded text-sm">
+                                                        <strong>Resultado:</strong> {examResults[p.id].result}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
