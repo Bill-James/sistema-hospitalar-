@@ -40,10 +40,22 @@
             reception: '3333',
             pharmacy: '4444'
         };
+        // Especialidades disponíveis
+const SPECIALTIES = [
+    { id: 'clinica-geral', name: 'Clínica Geral', color: 'green', code: '1111' },
+    { id: 'pediatria', name: 'Pediatria', color: 'blue', code: '1112' },
+    { id: 'ginecologia', name: 'Ginecologia/Obstetrícia', color: 'purple', code: '1113' },
+    { id: 'estomatologia', name: 'Estomatologia', color: 'yellow', code: '1114' },
+    { id: 'psicologia', name: 'Psicologia', color: 'orange', code: '1115' },
+    { id: 'vacinacao', name: 'PAVI-Vacina', color: 'indigo', code: '1116' },
+    { id: 'tratamentos', name: 'Tratamentos', color: 'pink', code: '1117' },
+    { id: 'urgencia', name: 'Banco de Urgência', color: 'red', code: '9999' }
+];
 
         const ClinicQueueSystem = () => {
             const [view, setView] = useState('login');
             const [userRole, setUserRole] = useState(null);
+            const [userSpecialty, setUserSpecialty] = useState(null);
             const [patients, setPatients] = useState([]);
             const [currentNumber, setCurrentNumber] = useState(1);
             const [calledPatients, setCalledPatients] = useState([]);
@@ -106,28 +118,35 @@
                 const [code, setCode] = useState('');
 
                 const handleLogin = (e) => {
-                    e.preventDefault();
-                    
-                    if (code === ACCESS_CODES.admin) {
-                        setUserRole('admin');
-                        setView('menu');
-                    } else if (code === ACCESS_CODES.doctor) {
-                        setUserRole('doctor');
-                        setView('doctor');
-                    } else if (code === ACCESS_CODES.exam) {
-                        setUserRole('exam');
-                        setView('exam');
-                    } else if (code === ACCESS_CODES.reception) {
-                        setUserRole('reception');
-                        setView('reception');
-                    } else if (code === ACCESS_CODES.pharmacy) {
-                        setUserRole('pharmacy');
-                        setView('pharmacy');
-                    } else {
-                        alert('Código inválido!');
-                    }
-                    setCode('');
-                };
+    e.preventDefault();
+    
+    if (code === ACCESS_CODES.admin) {
+        setUserRole('admin');
+        setUserSpecialty(null);
+        setView('menu');
+    } else {
+        // Verificar se é código de especialidade
+        const specialty = SPECIALTIES.find(s => s.code === code);
+        if (specialty) {
+            setUserRole('doctor');
+            setUserSpecialty(specialty.id);
+            setView('doctor');
+        } else if (code === ACCESS_CODES.exam) {
+            setUserRole('exam');
+            setUserSpecialty(null);
+            setView('exam');
+        } else if (code === ACCESS_CODES.reception) {
+            setUserRole('reception');
+            setUserSpecialty(null);
+            setView('reception');
+        } else if (code === ACCESS_CODES.pharmacy) {
+            setUserRole('pharmacy');
+            setUserSpecialty(null);
+            setView('pharmacy');
+        } else {
+            alert('Código inválido!');
+        }
+    }
 
                 const goPublic = () => {
                     setUserRole('public');
@@ -264,11 +283,11 @@
                     temperature: '', bloodPressure: '', symptoms: '', priority: 'normal'
                 });
 
-                const addPatient = () => {
-                    if (!formData.name.trim() || !formData.age) {
-                        alert('Preencha pelo menos nome e idade!');
-                        return;
-                    }
+               const addPatient = () => {
+    if (!formData.name.trim() || !formData.age || !formData.specialty) {
+        alert('Preencha nome, idade e especialidade!');
+        return;
+    }
                     
                     const newPatient = {
                         id: Date.now(),
@@ -283,10 +302,11 @@
                     db.ref('patients/' + newPatient.id).set(newPatient);
                     db.ref('currentNumber').set(currentNumber + 1);
                     
-                    setFormData({
-                        name: '', age: '', weight: '', address: '',
-                        temperature: '', bloodPressure: '', symptoms: '', priority: 'normal'
-                    });
+                    const [formData, setFormData] = useState({
+    name: '', age: '', weight: '', address: '',
+    temperature: '', bloodPressure: '', symptoms: '', priority: 'normal', specialty: ''
+});
+                    
                     
                     alert(`✅ Senha ${currentNumber} gerada para ${formData.name}`);
                 };
@@ -342,6 +362,17 @@
                                             <option value="urgent">Urgente</option>
                                         </select>
                                     </div>
+                                    <div>
+    <label className="block text-sm font-bold mb-2">Especialidade *</label>
+    <select value={formData.specialty || ''}
+        onChange={(e) => setFormData({...formData, specialty: e.target.value})}
+        className="w-full p-3 border rounded-lg">
+        <option value="">Selecione...</option>
+        {SPECIALTIES.map(s => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+        ))}
+    </select>
+</div>
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-bold mb-2">Morada</label>
                                         <input type="text" value={formData.address}
@@ -383,9 +414,13 @@
                 const [examType, setExamType] = useState('');
                 const [prescription, setPrescription] = useState('');
 
-                const selectedPatient = patients.find(p => p.status === 'consulting') || null;
+                const selectedPatient = patients.find(p => 
+    p.status === 'consulting' && p.specialty === userSpecialty
+) || null;
 
-                const waitingPatients = patients.filter(p => p.status === 'waiting')
+                const waitingPatients = patients.filter(p => 
+    p.status === 'waiting' && p.specialty === userSpecialty
+)
                     .sort((a, b) => {
                         if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
                         if (b.priority === 'urgent' && a.priority !== 'urgent') return 1;
@@ -452,7 +487,9 @@
                             
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="bg-white rounded-lg shadow-xl p-6">
-                                    <h2 className="text-2xl font-bold text-green-900 mb-6">🩺 Painel do Médico</h2>
+                                    <h2 className="text-2xl font-bold text-green-900 mb-6">
+    🩺 Painel do Médico - {SPECIALTIES.find(s => s.id === userSpecialty)?.name || 'Clínica Geral'}
+</h2>
                                     
                                     {selectedPatient ? (
                                         <div className="space-y-4">
