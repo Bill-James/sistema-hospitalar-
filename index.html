@@ -147,6 +147,8 @@ const SPECIALTIES = [
             alert('Código inválido!');
         }
     }
+                    setCode('');
+};
 
                 const goPublic = () => {
                     setUserRole('public');
@@ -278,10 +280,10 @@ const SPECIALTIES = [
 
             // Recepção
             const ReceptionView = () => {
-                const [formData, setFormData] = useState({
-                    name: '', age: '', weight: '', address: '',
-                    temperature: '', bloodPressure: '', symptoms: '', priority: 'normal'
-                });
+                  const [formData, setFormData] = useState({
+    name: '', age: '', weight: '', address: '',
+    temperature: '', bloodPressure: '', symptoms: '', priority: 'normal', specialty: ''
+});
 
                const addPatient = () => {
     if (!formData.name.trim() || !formData.age || !formData.specialty) {
@@ -302,7 +304,7 @@ const SPECIALTIES = [
                     db.ref('patients/' + newPatient.id).set(newPatient);
                     db.ref('currentNumber').set(currentNumber + 1);
                     
-                    const [formData, setFormData] = useState({
+                  setFormData({
     name: '', age: '', weight: '', address: '',
     temperature: '', bloodPressure: '', symptoms: '', priority: 'normal', specialty: ''
 });
