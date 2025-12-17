@@ -544,12 +544,20 @@
                                         {patients.filter(p => p.status === 'exam' && examResults[p.id]).map(p => (
                                             <div key={p.id} className="bg-blue-50 p-3 rounded mb-2 border-2 border-blue-300">
                                                 <div className="flex justify-between items-center">
-                                                    <div>
-                                                        <div className="font-bold">#{p.number} - {p.name}</div>
-                                                        <div className="text-sm text-gray-600">
-                                                            {p.examType} - ✅ Resultado pronto
-                                                        </div>
-                                                    </div>
+                                                   <div>
+    <div className="font-bold">#{p.number} - {p.name}</div>
+    <div className="text-sm text-gray-600">
+        {p.examType} - ✅ Resultado pronto
+    </div>
+    {examResults[p.id] && (
+        <div className="mt-2 p-3 bg-white rounded border border-blue-200">
+            <div className="text-xs font-bold text-gray-700 mb-1">📋 Resultado do Exame:</div>
+            <div className="text-sm text-gray-900 whitespace-pre-wrap">
+                {examResults[p.id].result}
+            </div>
+        </div>
+    )}
+</div>
                                                     <button 
                                                         onClick={() => {
                                                             if (selectedPatient) {
