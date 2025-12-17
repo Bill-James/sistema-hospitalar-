@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestão de Fila - Hospital</title>
+    <title>Sistema de Gestão - Hospital</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -17,7 +17,6 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // Configuração do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyC9UvNolXo5KQKVQD3MQ2NekWSCr1hn1sM",
             authDomain: "sistema-hospitalar-a6345.firebaseapp.com",
@@ -28,14 +27,23 @@
             appId: "1:839605236604:web:ce453247e921b377d3aaf9"
         };
 
-        // Inicializar Firebase
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         const db = firebase.database();
 
+        // Códigos de acesso
+        const ACCESS_CODES = {
+            admin: '2580',
+            doctor: '1111',
+            exam: '2222',
+            reception: '3333',
+            pharmacy: '4444'
+        };
+
         const ClinicQueueSystem = () => {
-            const [view, setView] = useState('menu');
+            const [view, setView] = useState('login');
+            const [userRole, setUserRole] = useState(null);
             const [patients, setPatients] = useState([]);
             const [currentNumber, setCurrentNumber] = useState(1);
             const [calledPatients, setCalledPatients] = useState([]);
@@ -88,61 +96,138 @@
                 db.ref('examResults/' + patientId).set(result);
             };
 
-            // Menu Principal
+            const logout = () => {
+                setUserRole(null);
+                setView('login');
+            };
+
+            // Login
+            const LoginView = () => {
+                const [code, setCode] = useState('');
+
+                const handleLogin = (e) => {
+                    e.preventDefault();
+                    
+                    if (code === ACCESS_CODES.admin) {
+                        setUserRole('admin');
+                        setView('menu');
+                    } else if (code === ACCESS_CODES.doctor) {
+                        setUserRole('doctor');
+                        setView('doctor');
+                    } else if (code === ACCESS_CODES.exam) {
+                        setUserRole('exam');
+                        setView('exam');
+                    } else if (code === ACCESS_CODES.reception) {
+                        setUserRole('reception');
+                        setView('reception');
+                    } else if (code === ACCESS_CODES.pharmacy) {
+                        setUserRole('pharmacy');
+                        setView('pharmacy');
+                    } else {
+                        alert('Código inválido!');
+                    }
+                    setCode('');
+                };
+
+                const goPublic = () => {
+                    setUserRole('public');
+                    setView('public-menu');
+                };
+
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+                            <h1 className="text-3xl font-bold text-blue-900 mb-6 text-center">🏥 Sistema Hospitalar</h1>
+                            
+                            <form onSubmit={handleLogin} className="mb-4">
+                                <label className="block text-sm font-bold mb-2">Código de Acesso</label>
+                                <input
+                                    type="password"
+                                    value={code}
+                                    onChange={(e) => setCode(e.target.value)}
+                                    className="w-full p-3 border rounded-lg mb-4 text-center text-2xl"
+                                    placeholder="••••"
+                                    maxLength="4"
+                                />
+                                <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold">
+                                    Entrar
+                                </button>
+                            </form>
+
+                            <button onClick={goPublic} className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-bold">
+                                📺 Acesso Público
+                            </button>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Menu Público
+            const PublicMenuView = () => (
+                <div className="min-h-screen bg-gradient-to-br from-purple-50 to-purple-100 p-4">
+                    <div className="max-w-4xl mx-auto">
+                        <button onClick={logout} className="mb-4 text-purple-600 hover:underline font-bold">← Sair</button>
+                        
+                        <div className="bg-white rounded-lg shadow-xl p-8">
+                            <h1 className="text-3xl font-bold text-purple-900 mb-6 text-center">Acesso Público</h1>
+                            
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <button onClick={() => setView('display')} className="bg-purple-600 hover:bg-purple-700 text-white p-6 rounded-lg">
+                                    <span className="text-3xl">📺</span>
+                                    <div className="font-bold text-lg mt-2">Painel Público</div>
+                                    <div className="text-sm opacity-90">TV de chamadas</div>
+                                </button>
+
+                                <button onClick={() => setView('patient')} className="bg-orange-600 hover:bg-orange-700 text-white p-6 rounded-lg">
+                                    <span className="text-3xl">📱</span>
+                                    <div className="font-bold text-lg mt-2">Acompanhar Fila</div>
+                                    <div className="text-sm opacity-90">Consultar senha</div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // Menu Admin
             const MenuView = () => (
                 <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-4">
                     <div className="max-w-4xl mx-auto">
+                        <button onClick={logout} className="mb-4 text-blue-600 hover:underline font-bold">← Sair</button>
+                        
                         <div className="bg-white rounded-lg shadow-xl p-8 mb-6">
                             <h1 className="text-3xl font-bold text-blue-900 mb-2">Sistema de Gestão Hospitalar</h1>
-                            <p className="text-gray-600 mb-6">Posto de Saúde - Controle Inteligente em Tempo Real</p>
+                            <p className="text-gray-600 mb-6">Posto de Saúde - Administrador</p>
                             
                             <div className="grid md:grid-cols-2 gap-4">
-                                <button onClick={() => setView('reception')} className="bg-blue-600 hover:bg-blue-700 text-white p-6 rounded-lg flex items-center justify-center gap-3 transition">
+                                <button onClick={() => setView('reception')} className="bg-blue-600 hover:bg-blue-700 text-white p-6 rounded-lg">
                                     <span className="text-3xl">👥</span>
-                                    <div className="text-left">
-                                        <div className="font-bold text-lg">Recepção/Triagem</div>
-                                        <div className="text-sm opacity-90">Cadastrar pacientes</div>
-                                    </div>
+                                    <div className="font-bold text-lg mt-2">Recepção/Triagem</div>
                                 </button>
 
-                                <button onClick={() => setView('doctor')} className="bg-green-600 hover:bg-green-700 text-white p-6 rounded-lg flex items-center justify-center gap-3 transition">
+                                <button onClick={() => setView('doctor')} className="bg-green-600 hover:bg-green-700 text-white p-6 rounded-lg">
                                     <span className="text-3xl">🩺</span>
-                                    <div className="text-left">
-                                        <div className="font-bold text-lg">Médico</div>
-                                        <div className="text-sm opacity-90">Consultas e diagnóstico</div>
-                                    </div>
+                                    <div className="font-bold text-lg mt-2">Médico</div>
                                 </button>
 
-                                <button onClick={() => setView('exam')} className="bg-teal-600 hover:bg-teal-700 text-white p-6 rounded-lg flex items-center justify-center gap-3 transition">
+                                <button onClick={() => setView('exam')} className="bg-teal-600 hover:bg-teal-700 text-white p-6 rounded-lg">
                                     <span className="text-3xl">🔬</span>
-                                    <div className="text-left">
-                                        <div className="font-bold text-lg">Sala de Exames</div>
-                                        <div className="text-sm opacity-90">Realizar análises</div>
-                                    </div>
+                                    <div className="font-bold text-lg mt-2">Sala de Exames</div>
                                 </button>
 
-                                <button onClick={() => setView('pharmacy')} className="bg-pink-600 hover:bg-pink-700 text-white p-6 rounded-lg flex items-center justify-center gap-3 transition">
+                                <button onClick={() => setView('pharmacy')} className="bg-pink-600 hover:bg-pink-700 text-white p-6 rounded-lg">
                                     <span className="text-3xl">💊</span>
-                                    <div className="text-left">
-                                        <div className="font-bold text-lg">Farmácia</div>
-                                        <div className="text-sm opacity-90">Receitas médicas</div>
-                                    </div>
+                                    <div className="font-bold text-lg mt-2">Farmácia</div>
                                 </button>
 
-                                <button onClick={() => setView('display')} className="bg-purple-600 hover:bg-purple-700 text-white p-6 rounded-lg flex items-center justify-center gap-3 transition">
+                                <button onClick={() => setView('display')} className="bg-purple-600 hover:bg-purple-700 text-white p-6 rounded-lg">
                                     <span className="text-3xl">📺</span>
-                                    <div className="text-left">
-                                        <div className="font-bold text-lg">Painel Público</div>
-                                        <div className="text-sm opacity-90">TV de chamadas</div>
-                                    </div>
+                                    <div className="font-bold text-lg mt-2">Painel Público</div>
                                 </button>
 
-                                <button onClick={() => setView('patient')} className="bg-orange-600 hover:bg-orange-700 text-white p-6 rounded-lg flex items-center justify-center gap-3 transition">
+                                <button onClick={() => setView('patient')} className="bg-orange-600 hover:bg-orange-700 text-white p-6 rounded-lg">
                                     <span className="text-3xl">📱</span>
-                                    <div className="text-left">
-                                        <div className="font-bold text-lg">Paciente</div>
-                                        <div className="text-sm opacity-90">Acompanhar fila</div>
-                                    </div>
+                                    <div className="font-bold text-lg mt-2">Paciente</div>
                                 </button>
                             </div>
                         </div>
@@ -206,24 +291,26 @@
                     alert(`✅ Senha ${currentNumber} gerada para ${formData.name}`);
                 };
 
+                const backBtn = userRole === 'admin' ? () => setView('menu') : logout;
+
                 return (
                     <div className="min-h-screen bg-blue-50 p-4">
                         <div className="max-w-3xl mx-auto">
-                            <button onClick={() => setView('menu')} className="mb-4 text-blue-600 hover:underline font-bold">← Voltar</button>
+                            <button onClick={backBtn} className="mb-4 text-blue-600 hover:underline font-bold">← Voltar</button>
                             
-                            <div className="bg-white rounded-lg shadow-xl p-6">
+                            <div className="bg-white rounded-lg shadow-xl p-6 mb-4">
                                 <h2 className="text-2xl font-bold text-blue-900 mb-6">📋 Recepção - Triagem</h2>
                                 
                                 <div className="grid md:grid-cols-2 gap-4 mb-4">
                                     <div>
                                         <label className="block text-sm font-bold mb-2">Nome Completo *</label>
-                                        <input type="text" name="name" value={formData.name} 
+                                        <input type="text" value={formData.name} 
                                             onChange={(e) => setFormData({...formData, name: e.target.value})}
-                                            className="w-full p-3 border rounded-lg" placeholder="Nome" />
+                                            className="w-full p-3 border rounded-lg" />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-bold mb-2">Idade *</label>
-                                        <input type="number" name="age" value={formData.age}
+                                        <input type="number" value={formData.age}
                                             onChange={(e) => setFormData({...formData, age: e.target.value})}
                                             className="w-full p-3 border rounded-lg" />
                                     </div>
@@ -278,12 +365,18 @@
                                     <div className="text-6xl font-bold text-blue-900">{currentNumber - 1}</div>
                                 </div>
                             </div>
+
+                            {userRole === 'reception' && (
+                                <button onClick={() => setView('patient')} className="w-full bg-orange-600 hover:bg-orange-700 text-white py-4 rounded-lg font-bold">
+                                    📱 Acompanhar Fila
+                                </button>
+                            )}
                         </div>
                     </div>
                 );
             };
 
-            // Médico - VERSÃO CORRIGIDA
+            // Médico
             const DoctorView = () => {
                 const [diagnosis, setDiagnosis] = useState('');
                 const [needsExam, setNeedsExam] = useState(false);
@@ -350,10 +443,12 @@
                     alert('✅ Consulta finalizada!');
                 };
 
+                const backBtn = userRole === 'admin' ? () => setView('menu') : logout;
+
                 return (
                     <div className="min-h-screen bg-green-50 p-4">
                         <div className="max-w-6xl mx-auto">
-                            <button onClick={() => setView('menu')} className="mb-4 text-green-600 hover:underline font-bold">← Voltar</button>
+                            <button onClick={backBtn} className="mb-4 text-green-600 hover:underline font-bold">← Voltar</button>
                             
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="bg-white rounded-lg shadow-xl p-6">
@@ -443,49 +538,45 @@
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="mt-6">
-    <h3 className="font-bold mb-4 text-blue-900">🔄 Retornaram do Exame</h3>
-    {patients.filter(p => p.status === 'exam' && examResults[p.id]).map(p => (
-        <div key={p.id} className="bg-blue-50 p-3 rounded mb-2 border-2 border-blue-300">
-            <div className="flex justify-between items-center">
-                <div>
-                    <div className="font-bold">#{p.number} - {p.name}</div>
-                    <div className="text-sm text-gray-600">
-                        {p.examType} - ✅ Resultado pronto
-                    </div>
-                </div>
-                <button 
-                    onClick={() => {
-                        if (selectedPatient) {
-                            alert('Finalize o atendimento atual primeiro!');
-                            return;
-                        }
-                        updatePatient({...p, status: 'consulting', examRoom: null});
-                        addCalledPatient(p);
-                    }}
-                    disabled={selectedPatient !== null}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded font-bold">
-                    Chamar
-                </button>
-            </div>
-        </div>
-    ))}
-</div>
 
                                     <div className="mt-6">
-                                        <h3 className="font-bold mb-4">Aguardando Exames</h3>
-                                        {patients.filter(p => p.status === 'exam').map(p => (
-                                            <div key={p.id} className="bg-teal-50 p-3 rounded mb-2">
-                                                <div className="font-bold">#{p.number} - {p.name}</div>
-                                                <div className="text-sm">Sala {p.examRoom} - {p.examType}</div>
-                                                {examResults[p.id] && (
-                                                    <div className="mt-2 p-2 bg-white rounded text-sm">
-                                                        <strong>Resultado:</strong> {examResults[p.id].result}
+                                        <h3 className="font-bold mb-4 text-blue-900">🔄 Retornaram do Exame</h3>
+                                        {patients.filter(p => p.status === 'exam' && examResults[p.id]).map(p => (
+                                            <div key={p.id} className="bg-blue-50 p-3 rounded mb-2 border-2 border-blue-300">
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <div className="font-bold">#{p.number} - {p.name}</div>
+                                                        <div className="text-sm text-gray-600">
+                                                            {p.examType} - ✅ Resultado pronto
+                                                        </div>
                                                     </div>
-                                                )}
+                                                    <button 
+                                                        onClick={() => {
+                                                            if (selectedPatient) {
+                                                                alert('Finalize o atendimento atual primeiro!');
+                                                                return;
+                                                            }
+                                                            updatePatient({...p, status: 'consulting', examRoom: null});
+                                                            addCalledPatient(p);
+                                                        }}
+                                                        disabled={selectedPatient !== null}
+                                                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded font-bold">
+                                                        Chamar
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
+
+                                    <div className="mt-6">
+    <h3 className="font-bold mb-4">Aguardando Exames</h3>
+    {patients.filter(p => p.status === 'exam').map(p => (
+        <div key={p.id} className="bg-teal-50 p-3 rounded mb-2">
+            <div className="font-bold">#{p.number} - {p.name}</div>
+            <div className="text-sm">Sala {p.examRoom} - {p.examType}</div>
+        </div>
+    ))}
+</div>
                                 </div>
                             </div>
                         </div>
@@ -497,9 +588,11 @@
             const ExamView = () => {
                 const [roomNumber, setRoomNumber] = useState('');
                 const [result, setResult] = useState('');
+                const [showCompleted, setShowCompleted] = useState(false);
 
                 const examPatients = patients.filter(p => p.status === 'exam');
                 const myPatients = roomNumber ? examPatients.filter(p => p.examRoom === parseInt(roomNumber)) : [];
+                const completedExams = patients.filter(p => examResults[p.id]);
 
                 const submitResult = (patient) => {
                     if (!result) {
@@ -509,6 +602,7 @@
 
                     const examResult = {
                         patientId: patient.id,
+                        patientName: patient.name,
                         examType: patient.examType,
                         result: result,
                         timestamp: new Date().toLocaleString('pt-BR')
@@ -519,19 +613,20 @@
                     setResult('');
                 };
 
+                const backBtn = userRole === 'admin' ? () => setView('menu') : logout;
+
                 return (
                     <div className="min-h-screen bg-teal-50 p-4">
                         <div className="max-w-4xl mx-auto">
-                            <button onClick={() => setView('menu')} className="mb-4 text-teal-600 hover:underline font-bold">
-                                ← Voltar ao Menu
-                            </button>
-                          <div className="bg-white rounded-lg shadow-xl p-6">
+                            <button onClick={backBtn} className="mb-4 text-teal-600 hover:underline font-bold">← Voltar</button>
+                            
+                            <div className="bg-white rounded-lg shadow-xl p-6 mb-4">
                                 <h2 className="text-2xl font-bold text-teal-900 mb-6">🔬 Sala de Exames</h2>
                                 
                                 <div className="mb-6">
                                     <label className="block text-sm font-bold mb-2">Número da Sala (1-10)</label>
                                     <select value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)}
-                                        className="w-full p-3 border border-gray-300 rounded-lg">
+                                        className="w-full p-3 border rounded-lg">
                                         <option value="">Selecione sua sala...</option>
                                         {[1,2,3,4,5,6,7,8,9,10].map(n => (
                                             <option key={n} value={n}>Sala {n}</option>
@@ -587,18 +682,11 @@
                                                             </div>
                                                         ) : (
                                                             <div>
-                                                                <label className="block text-sm font-bold mb-2">
-                                                                    Resultado do Exame
-                                                                </label>
-                                                                <textarea
-                                                                    value={result}
-                                                                    onChange={(e) => setResult(e.target.value)}
-                                                                    className="w-full p-3 border border-gray-300 rounded-lg mb-2"
-                                                                    rows="4"
-                                                                    placeholder="Digite o resultado detalhado do exame..."
-                                                                />
-                                                                <button
-                                                                    onClick={() => submitResult(p)}
+                                                                <label className="block text-sm font-bold mb-2">Resultado do Exame</label>
+                                                                <textarea value={result} onChange={(e) => setResult(e.target.value)}
+                                                                    className="w-full p-3 border rounded-lg mb-2" rows="4"
+                                                                    placeholder="Digite o resultado detalhado do exame..."/>
+                                                                <button onClick={() => submitResult(p)}
                                                                     className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-bold">
                                                                     📋 Enviar Resultado ao Médico
                                                                 </button>
@@ -628,29 +716,71 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div className="bg-white rounded-lg shadow-lg p-6">
+                                <h3 className="font-bold text-lg mb-4">Estatísticas de Exames</h3>
+                                <div className="grid grid-cols-3 gap-4 text-center">
+                                    <div>
+                                        <div className="text-3xl font-bold text-teal-600">{examPatients.length}</div>
+                                        <div className="text-sm text-gray-600">Aguardando</div>
+                                    </div>
+                                    <div>
+                                        <button onClick={() => setShowCompleted(!showCompleted)}
+                                            className="w-full hover:bg-teal-50 p-2 rounded transition">
+                                            <div className="text-3xl font-bold text-green-600">{completedExams.length}</div>
+                                            <div className="text-sm text-gray-600">Total de Exames</div>
+                                        </button>
+                                    </div>
+                                    <div>
+                                        <div className="text-3xl font-bold text-blue-600">{Object.keys(examResults).length}</div>
+                                        <div className="text-sm text-gray-600">Resultados Enviados</div>
+                                    </div>
+                                </div>
+
+                                {showCompleted && (
+                                    <div className="mt-6 border-t pt-4">
+                                        <h4 className="font-bold mb-3">Lista Completa de Exames Realizados</h4>
+                                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                                            {completedExams.map(p => {
+                                                const exam = examResults[p.id];
+                                                return (
+                                                    <div key={p.id} className="bg-gray-50 p-3 rounded">
+                                                        <div className="font-bold">#{p.number} - {exam.patientName}</div>
+                                                        <div className="text-sm text-gray-600">
+                                                            <strong>Exame:</strong> {exam.examType}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">{exam.timestamp}</div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 );
             };
 
-            // Painel da Farmácia
+            // Farmácia
             const PharmacyView = () => {
+                const [showCompleted, setShowCompleted] = useState(false);
                 const pharmacyPatients = patients.filter(p => p.status === 'pharmacy');
+                const completedPharmacy = patients.filter(p => p.status === 'completed' && p.prescription);
 
                 const deliverMedicine = (patient) => {
-                    const updated = {...patient, status: 'completed'};
-                    updatePatient(updated);
+                    updatePatient({...patient, status: 'completed'});
                     alert(`✅ Medicamentos entregues a ${patient.name}`);
                 };
+
+                const backBtn = userRole === 'admin' ? () => setView('menu') : logout;
 
                 return (
                     <div className="min-h-screen bg-pink-50 p-4">
                         <div className="max-w-5xl mx-auto">
-                            <button onClick={() => setView('menu')} className="mb-4 text-pink-600 hover:underline font-bold">
-                                ← Voltar ao Menu
-                            </button>
+                            <button onClick={backBtn} className="mb-4 text-pink-600 hover:underline font-bold">← Voltar</button>
                             
-                            <div className="bg-white rounded-lg shadow-xl p-6">
+                            <div className="bg-white rounded-lg shadow-xl p-6 mb-4">
                                 <h2 className="text-2xl font-bold text-pink-900 mb-6">💊 Farmácia - Receitas Médicas</h2>
                                 
                                 {pharmacyPatients.length === 0 ? (
@@ -670,8 +800,7 @@
                                                             {p.age} anos • Chegou às {p.timestamp}
                                                         </div>
                                                     </div>
-                                                    <button
-                                                        onClick={() => deliverMedicine(p)}
+                                                    <button onClick={() => deliverMedicine(p)}
                                                         className="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-lg font-bold">
                                                         ✅ Entregar Medicamentos
                                                     </button>
@@ -685,71 +814,82 @@
                                                 )}
 
                                                 <div className="bg-white p-4 rounded border border-pink-300">
-                                                    <div className="text-sm font-bold text-pink-900 mb-2">
-                                                        📝 RECEITA MÉDICA
-                                                    </div>
-                                                    <div className="whitespace-pre-wrap text-gray-900">
-                                                        {p.prescription}
-                                                    </div>
+                                                    <div className="text-sm font-bold text-pink-900 mb-2">📝 RECEITA MÉDICA</div>
+                                                    <div className="whitespace-pre-wrap text-gray-900">{p.prescription}</div>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 )}
+                            </div>
 
-                                <div className="mt-6 bg-pink-100 p-4 rounded-lg">
-                                    <h3 className="font-bold mb-2">Estatísticas da Farmácia</h3>
-                                    <div className="grid grid-cols-3 gap-4 text-center">
-                                        <div>
-                                            <div className="text-3xl font-bold text-pink-600">
-                                                {pharmacyPatients.length}
-                                            </div>
-                                            <div className="text-sm text-gray-600">Aguardando</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-3xl font-bold text-green-600">
-                                                {patients.filter(p => p.status === 'completed' && p.prescription).length}
-                                            </div>
-                                            <div className="text-sm text-gray-600">Atendidos Hoje</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-3xl font-bold text-blue-600">
-                                                {patients.filter(p => p.prescription).length}
-                                            </div>
+                            <div className="bg-white rounded-lg shadow-lg p-6">
+                                <h3 className="font-bold text-lg mb-4">Estatísticas da Farmácia</h3>
+                                <div className="grid grid-cols-3 gap-4 text-center">
+                                    <div>
+                                        <div className="text-3xl font-bold text-pink-600">{pharmacyPatients.length}</div>
+                                        <div className="text-sm text-gray-600">Aguardando</div>
+                                    </div>
+                                    <div>
+                                        <button onClick={() => setShowCompleted(!showCompleted)}
+                                            className="w-full hover:bg-pink-50 p-2 rounded transition">
+                                            <div className="text-3xl font-bold text-green-600">{completedPharmacy.length}</div>
                                             <div className="text-sm text-gray-600">Total de Receitas</div>
+                                        </button>
+                                    </div>
+                                    <div>
+                                        <div className="text-3xl font-bold text-blue-600">
+                                            {patients.filter(p => p.prescription).length}
                                         </div>
+                                        <div className="text-sm text-gray-600">Receitas Emitidas</div>
                                     </div>
                                 </div>
+
+                                {showCompleted && (
+                                    <div className="mt-6 border-t pt-4">
+                                        <h4 className="font-bold mb-3">Lista Completa de Medicamentos Dispensados</h4>
+                                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                                            {completedPharmacy.map(p => (
+                                                <div key={p.id} className="bg-gray-50 p-3 rounded">
+                                                    <div className="font-bold">#{p.number} - {p.name}</div>
+                                                    <div className="text-sm text-gray-600">
+                                                        <strong>Medicamento:</strong> {p.prescription}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
                 );
             };
 
-            // Painel Público (TV)
+            // Painel Público
             const DisplayView = () => {
+                const [currentTime, setCurrentTime] = useState(new Date());
                 const lastCalled = calledPatients[0];
+
+                useEffect(() => {
+                    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+                    return () => clearInterval(timer);
+                }, []);
 
                 return (
                     <div className="min-h-screen bg-gradient-to-br from-purple-900 to-purple-700 p-8">
                         <div className="max-w-7xl mx-auto">
-                            <button onClick={() => setView('menu')} className="mb-4 text-white hover:underline font-bold">
-                                ← Voltar ao Menu
-                            </button>
+                            {userRole !== 'public' && (
+                                <button onClick={() => userRole === 'admin' ? setView('menu') : setView('public-menu')} 
+                                    className="mb-4 text-white hover:underline font-bold">← Voltar</button>
+                            )}
                             
                             <div className="bg-white rounded-3xl shadow-2xl p-8 mb-6">
                                 <div className="text-center mb-8">
-                                    <h1 className="text-5xl font-bold text-purple-900 mb-2">
-                                        🏥 Posto de Saúde
-                                    </h1>
-                                    <div className="text-2xl text-gray-600">Painel de Chamadas</div>
-                                    <div className="text-lg text-gray-500 mt-2">
-                                        {new Date().toLocaleDateString('pt-BR', { 
-                                            weekday: 'long', 
-                                            year: 'numeric', 
-                                            month: 'long', 
-                                            day: 'numeric' 
-                                        })}
+                                    <h1 className="text-5xl font-bold text-purple-900 mb-2">🏥 Posto de Saúde</h1>
+                                    <div className="text-3xl font-bold text-purple-700">Luanda</div>
+                                    <div className="text-2xl text-gray-600 mt-4">
+                                        {currentTime.toLocaleTimeString('pt-BR')}
                                     </div>
                                 </div>
 
@@ -758,10 +898,12 @@
                                         <div className="text-center text-white">
                                             <div className="text-3xl mb-4">CHAMANDO SENHA</div>
                                             <div className="text-9xl font-bold mb-4">#{lastCalled.number}</div>
-                                            <div className="text-4xl font-bold">{lastCalled.name}</div>
-                                            <div className="text-2xl mt-4 opacity-90">
-                                                Dirija-se ao consultório médico
-                                            </div>
+                                            <div className="text-4xl font-bold mb-4">{lastCalled.name}</div>
+                                            {lastCalled.examRoom && (
+                                                <div className="text-3xl mt-4">
+                                                    Sala {lastCalled.examRoom}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -791,9 +933,7 @@
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-2xl font-bold text-teal-900">#{p.number}</span>
                                                         <span className="text-xl">{p.name}</span>
-                                                    </div>
-                                                    <div className="text-sm text-gray-600 mt-2">
-                                                        📍 Sala de Exame {p.examRoom} - {p.examType}
+                                                        <span className="text-lg font-bold">Sala {p.examRoom}</span>
                                                     </div>
                                                 </div>
                                             ))}
@@ -838,7 +978,7 @@
                 );
             };
 
-            // Painel do Paciente
+            // Paciente
             const PatientView = () => {
                 const [searchNumber, setSearchNumber] = useState('');
                 const [foundPatient, setFoundPatient] = useState(null);
@@ -906,12 +1046,17 @@
                     }
                 };
 
+                const backBtn = () => {
+                    if (userRole === 'admin') setView('menu');
+                    else if (userRole === 'reception') setView('reception');
+                    else if (userRole === 'public') setView('public-menu');
+                    else logout();
+                };
+
                 return (
                     <div className="min-h-screen bg-orange-50 p-4">
                         <div className="max-w-2xl mx-auto">
-                            <button onClick={() => setView('menu')} className="mb-4 text-orange-600 hover:underline font-bold">
-                                ← Voltar ao Menu
-                            </button>
+                            <button onClick={backBtn} className="mb-4 text-orange-600 hover:underline font-bold">← Voltar</button>
                             
                             <div className="bg-white rounded-lg shadow-xl p-6">
                                 <h2 className="text-2xl font-bold text-orange-900 mb-6 text-center">
@@ -921,15 +1066,11 @@
                                 <div className="mb-6">
                                     <label className="block text-sm font-bold mb-2">Digite o Número da Sua Senha</label>
                                     <div className="flex gap-2">
-                                        <input
-                                            type="number"
-                                            value={searchNumber}
+                                        <input type="number" value={searchNumber}
                                             onChange={(e) => setSearchNumber(e.target.value)}
                                             className="flex-1 p-4 border-2 border-orange-300 rounded-lg text-2xl text-center font-bold"
-                                            placeholder="000"
-                                        />
-                                        <button
-                                            onClick={searchPatient}
+                                            placeholder="000"/>
+                                        <button onClick={searchPatient}
                                             className="bg-orange-600 hover:bg-orange-700 text-white px-8 rounded-lg font-bold">
                                             Buscar
                                         </button>
@@ -939,41 +1080,22 @@
                                 {foundPatient && (
                                     <div className="space-y-4">
                                         <div className="bg-orange-100 p-6 rounded-lg text-center">
-                                            <div className="text-6xl font-bold text-orange-900 mb-2">
-                                                #{foundPatient.number}
-                                            </div>
-                                            <div className="text-2xl font-bold text-orange-900">
-                                                {foundPatient.name}
-                                            </div>
+                                            <div className="text-6xl font-bold text-orange-900 mb-2">#{foundPatient.number}</div>
+                                            <div className="text-2xl font-bold text-orange-900">{foundPatient.name}</div>
                                         </div>
 
                                         <div className={`p-6 rounded-lg ${getStatusMessage(foundPatient).color}`}>
-                                            <div className="text-3xl font-bold mb-2">
-                                                {getStatusMessage(foundPatient).status}
-                                            </div>
-                                            <div className="text-lg mb-2">
-                                                {getStatusMessage(foundPatient).message}
-                                            </div>
-                                            <div className="text-xl font-bold mt-4">
-                                                📍 {getStatusMessage(foundPatient).location}
-                                            </div>
+                                            <div className="text-3xl font-bold mb-2">{getStatusMessage(foundPatient).status}</div>
+                                            <div className="text-lg mb-2">{getStatusMessage(foundPatient).message}</div>
+                                            <div className="text-xl font-bold mt-4">📍 {getStatusMessage(foundPatient).location}</div>
                                         </div>
 
                                         {foundPatient.status === 'exam' && examResults[foundPatient.id] && (
                                             <div className="bg-green-100 p-4 rounded-lg">
-                                                <div className="font-bold text-green-900 mb-2">
-                                                    ✅ Exame Concluído
-                                                </div>
+                                                <div className="font-bold text-green-900 mb-2">✅ Exame Concluído</div>
                                                 <div className="text-sm text-gray-700">
                                                     Retorne ao consultório médico para avaliação
                                                 </div>
-                                            </div>
-                                        )}
-
-                                        {foundPatient.diagnosis && (
-                                            <div className="bg-gray-100 p-4 rounded-lg">
-                                                <div className="font-bold text-gray-900 mb-2">Informações:</div>
-                                                <div className="text-sm">{foundPatient.diagnosis}</div>
                                             </div>
                                         )}
 
@@ -1000,9 +1122,10 @@
                 );
             };
 
-            // Renderização Principal
             return (
                 <div>
+                    {view === 'login' && <LoginView />}
+                    {view === 'public-menu' && <PublicMenuView />}
                     {view === 'menu' && <MenuView />}
                     {view === 'reception' && <ReceptionView />}
                     {view === 'doctor' && <DoctorView />}
