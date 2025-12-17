@@ -753,12 +753,15 @@
                                                 const exam = examResults[p.id];
                                                 return (
                                                     <div key={p.id} className="bg-gray-50 p-3 rounded">
-                                                        <div className="font-bold">#{p.number} - {exam.patientName}</div>
-                                                        <div className="text-sm text-gray-600">
-                                                            <strong>Exame:</strong> {exam.examType}
-                                                        </div>
-                                                        <div className="text-xs text-gray-500">{exam.timestamp}</div>
-                                                    </div>
+    <div className="font-bold">#{p.number} - {exam.patientName}</div>
+    <div className="text-sm text-gray-600">
+        <strong>Exame:</strong> {exam.examType}
+    </div>
+    <div className="mt-2 p-2 bg-white rounded border text-sm">
+        <strong>Resultado:</strong> {exam.result}
+    </div>
+    <div className="text-xs text-gray-500 mt-1">{exam.timestamp}</div>
+</div>
                                                 );
                                             })}
                                         </div>
