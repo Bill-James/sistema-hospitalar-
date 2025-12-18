@@ -314,6 +314,103 @@ const SPECIALTIES = [
                 };
 
                 const backBtn = userRole === 'admin' ? () => setView('menu') : logout;
+                const generateReport = () => {
+    if (!confirm('Gerar relatório do dia e resetar sistema?')) return;
+    
+    // Filtrar apenas pacientes do dia (status completed ou pharmacy)
+    const completedPatients = patients.filter(p => 
+        p.status === 'completed' || p.status === 'pharmacy' || p.status === 'consulting' || p.status === 'exam'
+    );
+    
+    if (completedPatients.length === 0) {
+        alert('Nenhum paciente atendido hoje!');
+        return;
+    }
+    
+    // Preparar dados do relatório
+    let reportContent = 'RELATÓRIO DIÁRIO - POSTO DE SAÚDE\n';
+    reportContent += `Data: ${new Date().toLocaleDateString('pt-BR')}\n`;
+    reportContent += `Hora: ${new Date().toLocaleTimeString('pt-BR')}\n`;
+    reportContent += '='.repeat(80) + '\n\n';
+    
+    // Estatísticas gerais
+    reportContent += 'ESTATÍSTICAS GERAIS:\n';
+    reportContent += `Total de Pacientes Atendidos: ${completedPatients.length}\n`;
+    reportContent += `Pacientes Completos: ${patients.filter(p => p.status === 'completed').length}\n`;
+    reportContent += `Em Atendimento: ${patients.filter(p => p.status === 'consulting').length}\n`;
+    reportContent += `Aguardando Exames: ${patients.filter(p => p.status === 'exam').length}\n`;
+    reportContent += `Na Farmácia: ${patients.filter(p => p.status === 'pharmacy').length}\n`;
+    reportContent += '\n' + '='.repeat(80) + '\n\n';
+    
+    // Agrupar por especialidade
+    const specialtyGroups = {};
+    completedPatients.forEach(p => {
+        const spec = p.specialty || 'clinica-geral';
+        if (!specialtyGroups[spec]) specialtyGroups[spec] = [];
+        specialtyGroups[spec].push(p);
+    });
+    
+    // Relatório por especialidade
+    Object.keys(specialtyGroups).forEach(specId => {
+        const specialty = SPECIALTIES.find(s => s.id === specId);
+        const specName = specialty ? specialty.name : 'Clínica Geral';
+        const specPatients = specialtyGroups[specId];
+        
+        reportContent += `\n${specName.toUpperCase()} (${specPatients.length} pacientes)\n`;
+        reportContent += '-'.repeat(80) + '\n';
+        
+        specPatients.forEach((p, index) => {
+            reportContent += `\n${index + 1}. Senha #${p.number} - ${p.name}\n`;
+            reportContent += `   Idade: ${p.age} anos | Peso: ${p.weight || 'N/A'} kg\n`;
+            reportContent += `   Temperatura: ${p.temperature || 'N/A'}°C | PA: ${p.bloodPressure || 'N/A'}\n`;
+            reportContent += `   Sintomas: ${p.symptoms || 'N/A'}\n`;
+            reportContent += `   Chegada: ${p.timestamp}\n`;
+            
+            if (p.diagnosis) {
+                reportContent += `   Diagnóstico: ${p.diagnosis}\n`;
+            }
+            
+            if (p.examType) {
+                reportContent += `   Exame Realizado: ${p.examType}\n`;
+                if (examResults[p.id]) {
+                    reportContent += `   Resultado: ${examResults[p.id].result}\n`;
+                } else {
+                    reportContent += `   Resultado: PENDENTE\n`;
+                }
+            }
+            
+            if (p.prescription) {
+                reportContent += `   Receita: ${p.prescription}\n`;
+                reportContent += `   Medicamentos: ${p.status === 'completed' ? 'ENTREGUES' : 'PENDENTE'}\n`;
+            }
+            
+            reportContent += `   Status Final: ${p.status === 'completed' ? 'CONCLUÍDO' : p.status.toUpperCase()}\n`;
+        });
+    });
+    
+    reportContent += '\n\n' + '='.repeat(80) + '\n';
+    reportContent += 'FIM DO RELATÓRIO\n';
+    
+    // Download do arquivo
+    const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `relatorio_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}_${new Date().toLocaleTimeString('pt-BR').replace(/:/g, '-')}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    // Resetar sistema
+    if (confirm('Relatório gerado! Deseja resetar o sistema agora?')) {
+        db.ref('patients').set({});
+        db.ref('calledPatients').set([]);
+        db.ref('examResults').set({});
+        db.ref('currentNumber').set(1);
+        alert('✅ Sistema resetado com sucesso!');
+    }
+};
 
                 return (
                     <div className="min-h-screen bg-blue-50 p-4">
@@ -392,6 +489,12 @@ const SPECIALTIES = [
                                 <button onClick={addPatient} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-lg font-bold">
                                     🎫 Gerar Senha
                                 </button>
+                                {(userRole === 'admin' || userRole === 'reception') && patients.length > 0 && (
+    <button onClick={generateReport} 
+        className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold mt-4">
+        📊 Gerar Relatório e Resetar Sistema
+    </button>
+)}
 
                                 <div className="mt-6 bg-blue-100 p-6 rounded-lg text-center">
                                     <div className="text-sm text-gray-600">Última Senha</div>
