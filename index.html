@@ -1129,9 +1129,8 @@ const SPECIALTIES = [
                                         </h3>
                                         <div className="space-y-2 max-h-96 overflow-y-auto">
                                             {patients.filter(p => p.status === 'waiting').slice(0, 10).map(p => (
-                                                <div key={p.id} className="bg-white p-4 rounded-lg flex justify-between items-center shadow">
+                                                <div key={p.id} className="bg-white p-4 rounded-lg shadow text-center">
                                                     <span className="text-3xl font-bold text-blue-900">#{p.number}</span>
-                                                    <span className="text-xl">{p.name}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -1146,7 +1145,6 @@ const SPECIALTIES = [
                                                 <div key={p.id} className="bg-white p-4 rounded-lg shadow">
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-2xl font-bold text-teal-900">#{p.number}</span>
-                                                        <span className="text-xl">{p.name}</span>
                                                         <span className="text-lg font-bold">Sala {p.examRoom}</span>
                                                     </div>
                                                 </div>
@@ -1163,7 +1161,6 @@ const SPECIALTIES = [
                                         {patients.filter(p => p.status === 'pharmacy').map(p => (
                                             <div key={p.id} className="bg-white p-3 rounded-lg text-center shadow">
                                                 <div className="text-2xl font-bold text-pink-900">#{p.number}</div>
-                                                <div className="text-sm text-gray-600 truncate">{p.name}</div>
                                             </div>
                                         ))}
                                     </div>
