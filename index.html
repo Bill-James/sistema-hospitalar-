@@ -945,15 +945,7 @@ const SPECIALTIES = [
                                     };
                                     
                                     return (
-                                        <div 
-                                            key={room} 
-                                            className={`${colors[status]} text-white p-4 rounded-lg text-center cursor-pointer hover:opacity-80 transition`}
-                                            onClick={() => setRoomNumber(room.toString())}
-                                        >
-                                            <div className="font-bold text-lg">Sala {room}</div>
-                                            {patient && <div className="text-xs mt-1">#{patient.number}</div>}
-                                            <div className="text-xs mt-1">{labels[status]}</div>
-                                        </div>
+                                       <div                         key={room}                         className={`${colors[status]} text-white p-4 rounded-lg text-center cursor-pointer hover:opacity-80 transition relative`}                        onClick={() => setRoomNumber(room.toString())}                    >                        {/* 🔴 NOTIFICAÇÃO */}                        {status === 'occupied' && (                            <div className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs animate-pulse shadow-lg">                                !                            </div>                        )}                                                <div className="font-bold text-lg">Sala {room}</div>                        {patient && <div className="text-xs mt-1">#{patient.number}</div>}                        <div className="text-xs mt-1">{labels[status]}</div>                    </div>
                                     );
                                 })}
                             </div>
