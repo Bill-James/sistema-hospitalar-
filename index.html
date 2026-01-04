@@ -42,14 +42,15 @@
         };
         // Especialidades disponíveis
 const SPECIALTIES = [
-    { id: 'clinica-geral', name: 'Clínica Geral', color: 'green', code: '1111' },
-    { id: 'pediatria', name: 'Pediatria', color: 'blue', code: '1112' },
-    { id: 'ginecologia', name: 'Ginecologia/Obstetrícia', color: 'purple', code: '1113' },
-    { id: 'estomatologia', name: 'Estomatologia', color: 'yellow', code: '1114' },
-    { id: 'psicologia', name: 'Psicologia', color: 'orange', code: '1115' },
-    { id: 'vacinacao', name: 'PAVI-Vacina', color: 'indigo', code: '1116' },
-    { id: 'tratamentos', name: 'Tratamentos', color: 'pink', code: '1117' },
-    { id: 'urgencia', name: 'Banco de Urgência', color: 'red', code: '9999' }
+    { id: 'clinica-geral', name: 'Clínica Geral', color: 'green', code: '1111', examRooms: 20 },
+    { id: 'medicina', name: 'Medicina', color: 'blue', code: '1112', examRooms: 30 },
+    { id: 'obstetricia', name: 'Obstetrícia', color: 'purple', code: '1113', examRooms: 10 },
+    { id: 'pediatria', name: 'Pediatria', color: 'yellow', code: '1114', examRooms: 20 },
+    { id: 'tratamentos', name: 'Tratamentos', color: 'pink', code: '1115', examRooms: 0 },
+    { id: 'psicologia', name: 'Psicologia', color: 'orange', code: '1116', examRooms: 0 },
+    { id: 'vacinacao', name: 'PAVI-Vacina', color: 'indigo', code: '1117', examRooms: 0 },
+    { id: 'planeamento', name: 'Planeamento Familiar', color: 'teal', code: '1118', examRooms: 10 },
+    { id: 'urgencia', name: 'Banco de Urgência', color: 'red', code: '9999', examRooms: 10 }
 ];
 
         const ClinicQueueSystem = () => {
@@ -296,6 +297,7 @@ const SPECIALTIES = [
                         number: currentNumber,
                         ...formData,
                         status: 'waiting',
+                        examStatus: 'free',
                         timestamp: new Date().toLocaleTimeString('pt-BR'),
                         examRoom: null,
                         prescription: null
@@ -544,24 +546,49 @@ const SPECIALTIES = [
                 };
 
                 const sendToExam = () => {
-                    if (!examType) return alert('Selecione o tipo de exame!');
-                    
-                    const rooms = [1,2,3,4,5,6,7,8,9,10];
-                    const occupiedRooms = patients.filter(p => p.examRoom).map(p => p.examRoom);
-                    const availableRoom = rooms.find(r => !occupiedRooms.includes(r)) || 1;
+    if (!examType) return alert('Selecione o tipo de exame!');
+    
+    const specialty = SPECIALTIES.find(s => s.id === userSpecialty);
+    const examRooms = specialty?.examRooms || 0;
+    
+    // Especialidades sem salas usam Clínica Geral
+    const targetSpecialty = examRooms === 0 ? 'clinica-geral' : userSpecialty;
+    const targetRooms = examRooms === 0 ? 20 : examRooms;
+    
+    // Buscar salas ocupadas da especialidade alvo
+    const occupiedRooms = patients
+        .filter(p => p.examRoom && p.examSpecialty === targetSpecialty)
+        .map(p => p.examRoom);
+    
+    // Encontrar sala livre
+    let availableRoom = null;
+    for (let i = 1; i <= targetRooms; i++) {
+        if (!occupiedRooms.includes(i)) {
+            availableRoom = i;
+            break;
+        }
+    }
+    
+    if (!availableRoom) {
+        return alert(`⚠️ CAPACIDADE MÁXIMA ATINGIDA!\n\nTodas as ${targetRooms} salas de exame estão ocupadas.\nAguarde a liberação de uma sala antes de novos encaminhamentos.`);
+    }
 
-                    updatePatient({
-                        ...selectedPatient,
-                        status: 'exam',
-                        diagnosis,
-                        examType,
-                        examRoom: availableRoom
-                    });
-                    setDiagnosis('');
-                    setExamType('');
-                    setNeedsExam(false);
-                    alert(`✅ Enviado para Sala ${availableRoom}`);
-                };
+    updatePatient({
+        ...selectedPatient,
+        status: 'exam',
+        diagnosis,
+        examType,
+        examRoom: availableRoom,
+        examSpecialty: targetSpecialty,
+        originSpecialty: userSpecialty,
+        examStatus: 'occupied'
+    });
+    
+    setDiagnosis('');
+    setExamType('');
+    setNeedsExam(false);
+    alert(`✅ Enviado para Sala ${availableRoom} de ${specialty?.name || 'Clínica Geral'}`);
+};
 
                 const sendToPharmacy = () => {
                     if (!prescription) return alert('Digite a receita!');
@@ -625,11 +652,29 @@ const SPECIALTIES = [
                                                 <div>
                                                     <select value={examType} onChange={(e) => setExamType(e.target.value)} className="w-full p-3 border rounded-lg mb-2">
                                                         <option value="">Selecione...</option>
-                                                        <option value="Hemograma">Hemograma</option>
-                                                        <option value="Raio-X">Raio-X</option>
-                                                        <option value="Ultrassom">Ultrassom</option>
-                                                        <option value="ECG">ECG</option>
-                                                        <option value="COVID">Teste COVID</option>
+<option value="Pesquisa de plasmodium">Pesquisa de plasmodium</option>
+<option value="Reação widal">Reação widal</option>
+<option value="Hemograma completo">Hemograma completo</option>
+<option value="Falciformação">Falciformação</option>
+<option value="Grupo sanguíneo">Grupo sanguíneo</option>
+<option value="Teste rápido sífilis">Teste rápido sífilis</option>
+<option value="Teste rápido Hbsag">Teste rápido Hbsag</option>
+<option value="Teste rápido Hcv">Teste rápido Hcv</option>
+<option value="Teste rápido Dengue">Teste rápido Dengue</option>
+<option value="Teste rápido chicungunia">Teste rápido chicungunia</option>
+<option value="Teste de gravidez">Teste de gravidez</option>
+<option value="Urina">Urina</option>
+<option value="Tempo hemorragia">Tempo hemorragia</option>
+<option value="Tempo de coagulação">Tempo de coagulação</option>
+<option value="Velocidade hemossedimentação">Velocidade hemossedimentação</option>
+<option value="CD4">CD4</option>
+<option value="Carga viral interna">Carga viral interna</option>
+<option value="Glicémia em jejum">Glicémia em jejum</option>
+<option value="Ureia">Ureia</option>
+<option value="Triglicerídeos">Triglicerídeos</option>
+<option value="Transaminases AST">Transaminases AST</option>
+<option value="Fosfatase alcalina">Fosfatase alcalina</option>
+<option value="Colesterol total">Colesterol total</option>
                                                     </select>
                                                     <button onClick={sendToExam} className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-bold">
                                                         🔬 Enviar para Exame
@@ -683,7 +728,11 @@ const SPECIALTIES = [
 
                                     <div className="mt-6">
                                         <h3 className="font-bold mb-4 text-blue-900">🔄 Retornaram do Exame</h3>
-                                        {patients.filter(p => p.status === 'exam' && examResults[p.id]).map(p => (
+                                        {patients.filter(p => p.status === 'exam' && 
+        p.originSpecialty === userSpecialty &&
+        p.examStatus === 'completed' &&
+        examResults[p.id]
+    ).map(p => (
                                             <div key={p.id} className="bg-blue-50 p-3 rounded mb-2 border-2 border-blue-300">
                                                 <div className="flex justify-between items-center">
                                                    <div>
@@ -735,185 +784,205 @@ const SPECIALTIES = [
             };
 
             // Sala de Exames
-            const ExamView = () => {
-                const [roomNumber, setRoomNumber] = useState('');
-                const [result, setResult] = useState('');
-                const [showCompleted, setShowCompleted] = useState(false);
+           const ExamView = () => {
+    const [selectedSpecialty, setSelectedSpecialty] = useState('');
+    const [roomNumber, setRoomNumber] = useState('');
+    const [result, setResult] = useState('');
+    const [inProgressExams, setInProgressExams] = useState([]);
 
-                const examPatients = patients.filter(p => p.status === 'exam');
-                const myPatients = roomNumber ? examPatients.filter(p => p.examRoom === parseInt(roomNumber)) : [];
-                const completedExams = patients.filter(p => examResults[p.id]);
+    const specialtiesWithExams = SPECIALTIES.filter(s => s.examRooms > 0);
+    
+    const examPatients = selectedSpecialty
+        ? patients.filter(p => p.status === 'exam' && p.examSpecialty === selectedSpecialty)
+        : [];
+    
+    const myPatient = roomNumber && selectedSpecialty
+        ? examPatients.find(p => p.examRoom === parseInt(roomNumber) && p.examSpecialty === selectedSpecialty)
+        : null;
 
-                const submitResult = (patient) => {
-                    if (!result) {
-                        alert('Digite o resultado do exame!');
-                        return;
-                    }
+    const startExam = (patient) => {
+        setInProgressExams([...inProgressExams, patient.id]);
+        updatePatient({...patient, examStatus: 'in-progress'});
+    };
 
-                    const examResult = {
-                        patientId: patient.id,
-                        patientName: patient.name,
-                        examType: patient.examType,
-                        result: result,
-                        timestamp: new Date().toLocaleString('pt-BR')
-                    };
+    const sendResult = () => {
+        if (!result || !myPatient) return alert('Preencha o resultado!');
+        
+        saveExamResult(myPatient.id, {
+            result,
+            timestamp: new Date().toLocaleTimeString('pt-BR')
+        });
+        
+        updatePatient({
+            ...myPatient,
+            examStatus: 'completed',
+            examRoom: null,
+            examSpecialty: null
+        });
+        
+        setResult('');
+        setRoomNumber('');
+        alert('✅ Resultado enviado e sala liberada!');
+    };
 
-                    saveExamResult(patient.id, examResult);
-                    alert('✅ Resultado enviado ao médico!');
-                    setResult('');
-                };
+    const backBtn = userRole === 'admin' ? () => setView('menu') : logout;
 
-                const backBtn = userRole === 'admin' ? () => setView('menu') : logout;
+    return (
+        <div className="min-h-screen bg-teal-50 p-4">
+            <div className="max-w-5xl mx-auto">
+                <button onClick={backBtn} className="mb-4 text-teal-600 hover:underline font-bold">← Voltar</button>
+                
+                <div className="bg-white rounded-lg shadow-xl p-6">
+                    <h2 className="text-2xl font-bold text-teal-900 mb-6">🔬 Sala de Exames</h2>
+                    
+                    {/* Seleção de Especialidade */}
+                    <div className="mb-4">
+                        <label className="block text-sm font-bold mb-2">Especialidade:</label>
+                        <select 
+                            value={selectedSpecialty}
+                            onChange={(e) => {
+                                setSelectedSpecialty(e.target.value);
+                                setRoomNumber('');
+                            }}
+                            className="w-full p-3 border rounded-lg"
+                        >
+                            <option value="">Selecione uma especialidade...</option>
+                            {specialtiesWithExams.map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                        </select>
+                    </div>
 
-                return (
-                    <div className="min-h-screen bg-teal-50 p-4">
-                        <div className="max-w-4xl mx-auto">
-                            <button onClick={backBtn} className="mb-4 text-teal-600 hover:underline font-bold">← Voltar</button>
-                            
-                            <div className="bg-white rounded-lg shadow-xl p-6 mb-4">
-                                <h2 className="text-2xl font-bold text-teal-900 mb-6">🔬 Sala de Exames</h2>
-                                
-                                <div className="mb-6">
-                                    <label className="block text-sm font-bold mb-2">Número da Sala (1-10)</label>
-                                    <select value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)}
-                                        className="w-full p-3 border rounded-lg">
-                                        <option value="">Selecione sua sala...</option>
-                                        {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                                            <option key={n} value={n}>Sala {n}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                    {/* Seleção de Sala */}
+                    {selectedSpecialty && (
+                        <div className="mb-4">
+                            <label className="block text-sm font-bold mb-2">Número da Sala:</label>
+                            <select 
+                                value={roomNumber}
+                                onChange={(e) => setRoomNumber(e.target.value)}
+                                className="w-full p-3 border rounded-lg"
+                            >
+                                <option value="">Selecione uma sala...</option>
+                                {Array.from({length: SPECIALTIES.find(s => s.id === selectedSpecialty)?.examRooms || 0}, (_, i) => i + 1).map(room => (
+                                    <option key={room} value={room}>Sala {room}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
-                                {roomNumber && (
-                                    <div>
-                                        <h3 className="font-bold text-lg mb-4">
-                                            Pacientes na Sala {roomNumber} ({myPatients.length})
-                                        </h3>
-                                        
-                                        {myPatients.length === 0 ? (
-                                            <div className="bg-gray-100 p-6 rounded-lg text-center text-gray-600">
-                                                Nenhum paciente aguardando nesta sala
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-4">
-                                                {myPatients.map(p => (
-                                                    <div key={p.id} className="bg-teal-50 p-4 rounded-lg">
-                                                        <div className="flex justify-between items-start mb-3">
-                                                            <div>
-                                                                <div className="text-xl font-bold text-teal-900">
-                                                                    #{p.number} - {p.name}
-                                                                </div>
-                                                                <div className="text-sm text-gray-600 mt-1">
-                                                                    {p.age} anos • {p.weight} kg • {p.temperature}°C • PA: {p.bloodPressure}
-                                                                </div>
-                                                            </div>
-                                                            <span className="bg-teal-600 text-white px-3 py-1 rounded-full text-sm font-bold">
-                                                                Sala {p.examRoom}
-                                                            </span>
-                                                        </div>
-
-                                                        <div className="bg-white p-3 rounded mb-3">
-                                                            <div className="text-sm font-bold text-gray-700">Exame Solicitado:</div>
-                                                            <div className="text-lg font-bold text-teal-900">{p.examType}</div>
-                                                            {p.diagnosis && (
-                                                                <div className="mt-2 text-sm text-gray-600">
-                                                                    <strong>Diagnóstico Preliminar:</strong> {p.diagnosis}
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        {examResults[p.id] ? (
-                                                            <div className="bg-green-100 p-3 rounded">
-                                                                <div className="font-bold text-green-900">✅ Resultado Enviado</div>
-                                                                <div className="text-sm mt-1">{examResults[p.id].result}</div>
-                                                                <div className="text-xs text-gray-600 mt-1">
-                                                                    {examResults[p.id].timestamp}
-                                                                </div>
-                                                            </div>
-                                                        ) : (
-                                                            <div>
-                                                                <label className="block text-sm font-bold mb-2">Resultado do Exame</label>
-                                                                <textarea value={result} onChange={(e) => setResult(e.target.value)}
-                                                                    className="w-full p-3 border rounded-lg mb-2" rows="4"
-                                                                    placeholder="Digite o resultado detalhado do exame..."/>
-                                                                <button onClick={() => submitResult(p)}
-                                                                    className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-bold">
-                                                                    📋 Enviar Resultado ao Médico
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                <div className="mt-6 bg-teal-100 p-4 rounded-lg">
-                                    <h3 className="font-bold mb-3">Todas as Salas Ocupadas</h3>
-                                    <div className="grid grid-cols-5 gap-2">
-                                        {[1,2,3,4,5,6,7,8,9,10].map(room => {
-                                            const hasPatient = examPatients.some(p => p.examRoom === room);
-                                            return (
-                                                <div key={room} className={`p-2 rounded text-center font-bold ${
-                                                    hasPatient ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
-                                                }`}>
-                                                    Sala {room}
-                                                    <div className="text-xs">{hasPatient ? '🔴 Ocupada' : '🟢 Livre'}</div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                    {/* Paciente da Sala Selecionada */}
+                    {myPatient ? (
+                        <div className="bg-teal-50 p-6 rounded-lg border-2 border-teal-300 mb-6">
+                            <div className="mb-4">
+                                <div className="text-3xl font-bold text-teal-900">Senha #{myPatient.number}</div>
+                                <div className="text-xl font-bold mt-2">{myPatient.name}</div>
+                                <div className="text-sm text-gray-600 mt-2">
+                                    <div><strong>Idade:</strong> {myPatient.age} anos</div>
+                                    <div><strong>Origem:</strong> {SPECIALTIES.find(s => s.id === myPatient.originSpecialty)?.name}</div>
+                                    <div><strong>Tipo de Exame:</strong> {myPatient.examType}</div>
+                                    {myPatient.diagnosis && <div><strong>Diagnóstico:</strong> {myPatient.diagnosis}</div>}
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-lg shadow-lg p-6">
-                                <h3 className="font-bold text-lg mb-4">Estatísticas de Exames</h3>
-                                <div className="grid grid-cols-3 gap-4 text-center">
-                                    <div>
-                                        <div className="text-3xl font-bold text-teal-600">{examPatients.length}</div>
-                                        <div className="text-sm text-gray-600">Aguardando</div>
-                                    </div>
-                                    <div>
-                                        <button onClick={() => setShowCompleted(!showCompleted)}
-                                            className="w-full hover:bg-teal-50 p-2 rounded transition">
-                                            <div className="text-3xl font-bold text-green-600">{completedExams.length}</div>
-                                            <div className="text-sm text-gray-600">Total de Exames</div>
-                                        </button>
-                                    </div>
-                                    <div>
-                                        <div className="text-3xl font-bold text-blue-600">{Object.keys(examResults).length}</div>
-                                        <div className="text-sm text-gray-600">Resultados Enviados</div>
-                                    </div>
+                            {myPatient.examStatus === 'occupied' && (
+                                <button 
+                                    onClick={() => startExam(myPatient)}
+                                    className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-bold mb-3"
+                                >
+                                    🟠 Iniciar Exame
+                                </button>
+                            )}
+                            
+                            {myPatient.examStatus === 'in-progress' && (
+                                <div>
+                                    <label className="block text-sm font-bold mb-2">Resultado do Exame:</label>
+                                    <textarea
+                                        value={result}
+                                        onChange={(e) => setResult(e.target.value)}
+                                        placeholder="Digite o resultado do exame..."
+                                        className="w-full p-3 border rounded-lg mb-3"
+                                        rows="6"
+                                    />
+                                    <button 
+                                        onClick={sendResult}
+                                        className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold"
+                                    >
+                                        ✅ Enviar Resultado e Liberar Sala
+                                    </button>
                                 </div>
+                            )}
+                        </div>
+                    ) : selectedSpecialty && roomNumber ? (
+                        <div className="bg-gray-100 p-6 rounded-lg text-center text-gray-600 mb-6">
+                            Sala {roomNumber} está livre
+                        </div>
+                    ) : null}
 
-                                {showCompleted && (
-                                    <div className="mt-6 border-t pt-4">
-                                        <h4 className="font-bold mb-3">Lista Completa de Exames Realizados</h4>
-                                        <div className="space-y-2 max-h-96 overflow-y-auto">
-                                            {completedExams.map(p => {
-                                                const exam = examResults[p.id];
-                                                return (
-                                                    <div key={p.id} className="bg-gray-50 p-3 rounded">
-    <div className="font-bold">#{p.number} - {exam.patientName}</div>
-    <div className="text-sm text-gray-600">
-        <strong>Exame:</strong> {exam.examType}
-    </div>
-    <div className="mt-2 p-2 bg-white rounded border text-sm">
-        <strong>Resultado:</strong> {exam.result}
-    </div>
-    <div className="text-xs text-gray-500 mt-1">{exam.timestamp}</div>
-</div>
-                                                );
-                                            })}
+                    {/* Mapa de Salas */}
+                    {selectedSpecialty && (
+                        <div className="mt-6">
+                            <h3 className="font-bold text-lg mb-3">
+                                Mapa de Salas - {SPECIALTIES.find(s => s.id === selectedSpecialty)?.name}
+                            </h3>
+                            <div className="grid grid-cols-5 gap-3">
+                                {Array.from({length: SPECIALTIES.find(s => s.id === selectedSpecialty)?.examRooms || 0}, (_, i) => {
+                                    const room = i + 1;
+                                    const patient = examPatients.find(p => p.examRoom === room);
+                                    const status = patient ? patient.examStatus : 'free';
+                                    
+                                    const colors = {
+                                        free: 'bg-green-500',
+                                        occupied: 'bg-red-500',
+                                        'in-progress': 'bg-orange-500',
+                                        completed: 'bg-blue-500'
+                                    };
+                                    
+                                    const labels = {
+                                        free: '🟢 Livre',
+                                        occupied: '🔴 Ocupada',
+                                        'in-progress': '🟠 Em Andamento',
+                                        completed: '🔵 Concluída'
+                                    };
+                                    
+                                    return (
+                                        <div 
+                                            key={room} 
+                                            className={`${colors[status]} text-white p-4 rounded-lg text-center cursor-pointer hover:opacity-80 transition`}
+                                            onClick={() => setRoomNumber(room.toString())}
+                                        >
+                                            <div className="font-bold text-lg">Sala {room}</div>
+                                            {patient && <div className="text-xs mt-1">#{patient.number}</div>}
+                                            <div className="text-xs mt-1">{labels[status]}</div>
                                         </div>
-                                    </div>
-                                )}
+                                    );
+                                })}
+                            </div>
+                            
+                            <div className="mt-4 grid grid-cols-4 gap-2 text-sm">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 bg-green-500 rounded"></div>
+                                    <span>Livre</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 bg-red-500 rounded"></div>
+                                    <span>Ocupada</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 bg-orange-500 rounded"></div>
+                                    <span>Em Andamento</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                                    <span>Concluída</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                );
-            };
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
 
             // Farmácia
             const PharmacyView = () => {
