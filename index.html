@@ -54,9 +54,10 @@ const SPECIALTIES = [
 ];
 
         const ClinicQueueSystem = () => {
-            const [view, setView] = useState('login');
-            const [userRole, setUserRole] = useState(null);
-            const [userSpecialty, setUserSpecialty] = useState(null);
+    const savedSession = JSON.parse(localStorage.getItem('hospitalSession') || '{}');
+    const [view, setView] = useState(savedSession.view || 'login');
+    const [userRole, setUserRole] = useState(savedSession.role || null);
+    const [userSpecialty, setUserSpecialty] = useState(savedSession.specialty || null);
             const [patients, setPatients] = useState([]);
             const [currentNumber, setCurrentNumber] = useState(1);
             const [calledPatients, setCalledPatients] = useState([]);
@@ -110,9 +111,11 @@ const SPECIALTIES = [
             };
 
             const logout = () => {
-                setUserRole(null);
-                setView('login');
-            };
+    localStorage.removeItem('hospitalSession');
+    setUserRole(null);
+    setUserSpecialty(null);
+    setView('login');
+};
 
             // Login
             const LoginView = () => {
@@ -122,28 +125,33 @@ const SPECIALTIES = [
     e.preventDefault();
     
     if (code === ACCESS_CODES.admin) {
-        setUserRole('admin');
-        setUserSpecialty(null);
-        setView('menu');
+    setUserRole('admin');
+    setUserSpecialty(null);
+    setView('menu');
+    localStorage.setItem('hospitalSession', JSON.stringify({ role: 'admin', specialty: null, view: 'menu' }));
     } else {
         // Verificar se é código de especialidade
-        const specialty = SPECIALTIES.find(s => s.code === code);
-        if (specialty) {
-            setUserRole('doctor');
-            setUserSpecialty(specialty.id);
-            setView('doctor');
-        } else if (code === ACCESS_CODES.exam) {
-            setUserRole('exam');
-            setUserSpecialty(null);
-            setView('exam');
-        } else if (code === ACCESS_CODES.reception) {
-            setUserRole('reception');
-            setUserSpecialty(null);
-            setView('reception');
-        } else if (code === ACCESS_CODES.pharmacy) {
-            setUserRole('pharmacy');
-            setUserSpecialty(null);
-            setView('pharmacy');
+       const specialty = SPECIALTIES.find(s => s.code === code);
+if (specialty) {
+    setUserRole('doctor');
+    setUserSpecialty(specialty.id);
+    setView('doctor');
+    localStorage.setItem('hospitalSession', JSON.stringify({ role: 'doctor', specialty: specialty.id, view: 'doctor' }));
+       } else if (code === ACCESS_CODES.exam) {
+    setUserRole('exam');
+    setUserSpecialty(null);
+    setView('exam');
+    localStorage.setItem('hospitalSession', JSON.stringify({ role: 'exam', specialty: null, view: 'exam' }));
+} else if (code === ACCESS_CODES.reception) {
+    setUserRole('reception');
+    setUserSpecialty(null);
+    setView('reception');
+    localStorage.setItem('hospitalSession', JSON.stringify({ role: 'reception', specialty: null, view: 'reception' }));
+} else if (code === ACCESS_CODES.pharmacy) {
+    setUserRole('pharmacy');
+    setUserSpecialty(null);
+    setView('pharmacy');
+    localStorage.setItem('hospitalSession', JSON.stringify({ role: 'pharmacy', specialty: null, view: 'pharmacy' }));
         } else {
             alert('Código inválido!');
         }
