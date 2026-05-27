@@ -528,20 +528,20 @@ if (specialty) {
                 const [examType, setExamType] = useState('');
                 const [prescription, setPrescription] = useState('');
 
-                const selectedPatient = patients.find(p => 
-    p.status === 'consulting' && p.specialty === userSpecialty
-) || null;
+                const selectedPatient = userRole === 'admin'
+    ? patients.find(p => p.status === 'consulting') || null
+    : patients.find(p => p.status === 'consulting' && p.specialty === userSpecialty) || null;
 
-                const waitingPatients = patients.filter(p => 
-    p.status === 'waiting' && p.specialty === userSpecialty
-)
-                    .sort((a, b) => {
-                        if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
-                        if (b.priority === 'urgent' && a.priority !== 'urgent') return 1;
-                        if (a.priority === 'priority' && b.priority === 'normal') return -1;
-                        if (b.priority === 'priority' && a.priority === 'normal') return 1;
-                        return a.number - b.number;
-                    });
+const waitingPatients = (userRole === 'admin'
+    ? patients.filter(p => p.status === 'waiting')
+    : patients.filter(p => p.status === 'waiting' && p.specialty === userSpecialty)
+).sort((a, b) => {
+    if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
+    if (b.priority === 'urgent' && a.priority !== 'urgent') return 1;
+    if (a.priority === 'priority' && b.priority === 'normal') return -1;
+    if (b.priority === 'priority' && a.priority === 'normal') return 1;
+    return a.number - b.number;
+});
 
                 const callPatient = (patient) => {
                     if (selectedPatient) {
@@ -627,7 +627,9 @@ if (specialty) {
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="bg-white rounded-lg shadow-xl p-6">
                                     <h2 className="text-2xl font-bold text-green-900 mb-6">
-    🩺 Painel do Médico - {SPECIALTIES.find(s => s.id === userSpecialty)?.name || 'Clínica Geral'}
+    {userRole === 'admin' 
+        ? '🏥 Painel do Administrador - Todas as Especialidades'
+        : `🩺 Painel do Médico - ${SPECIALTIES.find(s => s.id === userSpecialty)?.name || 'Clínica Geral'}`}
 </h2>
                                     
                                     {selectedPatient ? (
@@ -736,10 +738,10 @@ if (specialty) {
                                     <div className="mt-6">
                                         <h3 className="font-bold mb-4 text-blue-900">🔄 Retornaram do Exame</h3>
                                         {patients.filter(p => p.status === 'exam' && 
-        p.originSpecialty === userSpecialty &&
-        p.examStatus === 'completed' &&
-        examResults[p.id]
-    ).map(p => (
+    (userRole === 'admin' || p.originSpecialty === userSpecialty) &&
+    p.examStatus === 'completed' &&
+    examResults[p.id]
+).map(p => (
                                             <div key={p.id} className="bg-blue-50 p-3 rounded mb-2 border-2 border-blue-300">
                                                 <div className="flex justify-between items-center">
                                                    <div>
@@ -776,12 +778,21 @@ if (specialty) {
 
                                     <div className="mt-6">
     <h3 className="font-bold mb-4">Aguardando Exames</h3>
-    {patients.filter(p => p.status === 'exam').map(p => (
-        <div key={p.id} className="bg-teal-50 p-3 rounded mb-2">
-            <div className="font-bold">#{p.number} - {p.name}</div>
-            <div className="text-sm">Sala {p.examRoom} - {p.examType}</div>
+    {patients.filter(p => p.status === 'exam' && 
+    (userRole === 'admin' || p.originSpecialty === userSpecialty)
+).map(p => (
+    <div key={p.id} className="bg-teal-50 p-3 rounded mb-2">
+        <div className="font-bold">#{p.number} - {p.name}</div>
+        <div className="text-sm">
+            Sala {p.examRoom} - {p.examType}
+            {userRole === 'admin' && (
+                <span className="ml-2 text-purple-700 font-bold">
+                    ({SPECIALTIES.find(s => s.id === p.originSpecialty)?.name || 'Geral'})
+                </span>
+            )}
         </div>
-    ))}
+    </div>
+))}
 </div>
                                 </div>
                             </div>
