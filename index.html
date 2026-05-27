@@ -851,7 +851,33 @@ const waitingPatients = (userRole === 'admin'
                 <button onClick={backBtn} className="mb-4 text-teal-600 hover:underline font-bold">← Voltar</button>
                 
                 <div className="bg-white rounded-lg shadow-xl p-6">
-                    <h2 className="text-2xl font-bold text-teal-900 mb-6">🔬 Sala de Exames</h2>
+                   <h2 className="text-2xl font-bold text-teal-900 mb-6">🔬 Sala de Exames</h2>
+
+{/* PAINEL OPERACIONAL - só aparece com exames pendentes */}
+{patients.filter(p => p.status === 'exam').length > 0 && (
+    <div className="mb-6 border-2 border-teal-400 rounded-xl bg-teal-50 p-4">
+        <div className="flex items-center gap-2 mb-3">
+            <span className="bg-teal-600 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">
+                {patients.filter(p => p.status === 'exam').length} SOLICITAÇÃO(ÕES) ATIVA(S)
+            </span>
+        </div>
+        <div className="space-y-2">
+            {patients.filter(p => p.status === 'exam').map(p => (
+                <div key={p.id} className="bg-white rounded-lg p-3 flex justify-between items-center border border-teal-200">
+                    <div>
+                        <span className="font-bold text-teal-900">#{p.number}</span>
+                        <span className="ml-2 font-semibold">{p.name}</span>
+                        <span className="ml-2 text-sm text-gray-500">— {p.examType}</span>
+                    </div>
+                    <div className="text-right text-sm">
+                        <div className="font-bold text-teal-700">Sala {p.examRoom}</div>
+                        <div className="text-gray-500">{SPECIALTIES.find(s => s.id === p.examSpecialty)?.name}</div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+)}
                     
                     {/* Seleção de Especialidade */}
                     <div className="mb-4">
