@@ -34,12 +34,11 @@
 
         // Códigos de acesso
         const ACCESS_CODES = {
-            admin: '1234',
-            doctor: '1111',
-            exam: '2222',
-            reception: '3333',
-            pharmacy: '4444'
-        };
+    admin: 'HospAdmin@2026',
+    exam: 'HospExame@2026',
+    reception: 'HospRecep@2026',
+    pharmacy: 'HospFarm@2026'
+};
         // Especialidades disponíveis
 const SPECIALTIES = [
     { id: 'clinica-geral', name: 'Clínica Geral', color: 'green', code: '1111', examRooms: 20 },
@@ -175,9 +174,9 @@ if (specialty) {
                                     type="password"
                                     value={code}
                                     onChange={(e) => setCode(e.target.value)}
-                                    className="w-full p-3 border rounded-lg mb-4 text-center text-2xl"
-                                    placeholder="••••"
-                                    maxLength="4"
+                                    className="w-full p-3 border rounded-lg mb-4 text-center text-lg"
+                                    placeholder="Código de acesso"
+                                    maxLength="20"
                                 />
                                 <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold">
                                     Entrar
