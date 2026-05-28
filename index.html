@@ -845,27 +845,30 @@ const waitingPatients = (userRole === 'admin'
         updatePatient({...patient, examStatus: 'in-progress'});
     };
 
-    const sendResult = () => {
-        if (!result || !myPatient) return alert('Preencha o resultado!');
-        
-        saveExamResult(myPatient.id, {
-            result,
-            timestamp: new Date().toLocaleTimeString('pt-BR')
-        });
-        
-        updatePatient({
-            ...myPatient,
-            examStatus: 'completed',
-            examRoom: null,
-            examSpecialty: null
-        });
+   const sendResult = () => {
+    if (!result || !myPatient) return alert('Preencha o resultado!');
+    
+    const examSpecialtyToRemove = myPatient.examSpecialty; // ← captura aqui
+    const patientIdToRemove = myPatient.id;                // ← e aqui
 
-        db.ref('rooms/' + myPatient.examSpecialty + '/' + myPatient.id).remove();
-        
-        setResult('');
-        setRoomNumber('');
-        alert('✅ Resultado enviado e sala liberada!');
-    };
+    saveExamResult(myPatient.id, {
+        result,
+        timestamp: new Date().toLocaleTimeString('pt-BR')
+    });
+    
+    updatePatient({
+        ...myPatient,
+        examStatus: 'completed',
+        examRoom: null,
+        examSpecialty: null
+    });
+
+    db.ref('rooms/' + examSpecialtyToRemove + '/' + patientIdToRemove).remove();
+    
+    setResult('');
+    setRoomNumber('');
+    alert('✅ Resultado enviado e sala liberada!');
+};
 
     const backBtn = userRole === 'admin' ? () => setView('menu') : logout;
 
