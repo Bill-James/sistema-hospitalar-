@@ -298,29 +298,40 @@ if (specialty) {
         alert('Preencha nome, idade e especialidade!');
         return;
     }
-                    
-                    const newPatient = {
-                        id: Date.now(),
-                        number: currentNumber,
-                        ...formData,
-                        status: 'waiting',
-                        examStatus: 'free',
-                        timestamp: new Date().toLocaleTimeString('pt-BR'),
-                        examRoom: null,
-                        prescription: null
-                    };
 
-                    db.ref('patients/' + newPatient.id).set(newPatient);
-                    db.ref('currentNumber').set(currentNumber + 1);
-                    
-                  setFormData({
-    name: '', age: '', weight: '', address: '',
-    temperature: '', bloodPressure: '', symptoms: '', priority: 'normal', specialty: ''
-});
-                    
-                    
-                    alert(`✅ Senha ${currentNumber} gerada para ${formData.name}`);
-                };
+    db.ref('currentNumber').transaction((current) => {
+        return (current || 1) + 1;
+    }, (error, committed, snapshot) => {
+        if (error || !committed) {
+            alert('Erro ao gerar senha. Tente novamente.');
+            return;
+        }
+
+        const number = snapshot.val() - 1;
+        const newPatient = {
+            id: Date.now(),
+            number: number,
+            ...formData,
+            status: 'waiting',
+            examStatus: 'free',
+            timestamp: new Date().toLocaleTimeString('pt-BR'),
+            examRoom: null,
+            prescription: null
+        };
+
+        db.ref('patients/' + newPatient.id).set(newPatient)
+            .then(() => {
+                setFormData({
+                    name: '', age: '', weight: '', address: '',
+                    temperature: '', bloodPressure: '', symptoms: '', priority: 'normal', specialty: ''
+                });
+                alert(`✅ Senha ${number} gerada para ${formData.name}`);
+            })
+            .catch(() => {
+                alert('❌ Erro ao registar paciente. Tente novamente.');
+            });
+    });
+};
 
                 const backBtn = userRole === 'admin' ? () => setView('menu') : logout;
                 const generateReport = () => {
