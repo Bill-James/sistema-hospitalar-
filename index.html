@@ -569,54 +569,43 @@ const waitingPatients = (userRole === 'admin'
     const specialty = SPECIALTIES.find(s => s.id === userSpecialty);
     const examRooms = specialty?.examRooms || 0;
     
+    // Especialidades sem salas usam Clínica Geral
     const targetSpecialty = examRooms === 0 ? 'clinica-geral' : userSpecialty;
     const targetRooms = examRooms === 0 ? 20 : examRooms;
-
-    db.ref('rooms/' + targetSpecialty).transaction((currentRooms) => {
-        const occupied = currentRooms ? Object.values(currentRooms) : [];
-        
-        let availableRoom = null;
-        for (let i = 1; i <= targetRooms; i++) {
-            if (!occupied.includes(i)) {
-                availableRoom = i;
-                break;
-            }
+    
+    // Buscar salas ocupadas da especialidade alvo
+    const occupiedRooms = patients
+        .filter(p => p.examRoom && p.examSpecialty === targetSpecialty)
+        .map(p => p.examRoom);
+    
+    // Encontrar sala livre
+    let availableRoom = null;
+    for (let i = 1; i <= targetRooms; i++) {
+        if (!occupiedRooms.includes(i)) {
+            availableRoom = i;
+            break;
         }
-        
-        if (!availableRoom) return;
-        
-        return { ...currentRooms, [selectedPatient.id]: availableRoom };
-        
-    }, (error, committed, snapshot) => {
-        if (error) {
-            alert('❌ Erro ao alocar sala. Tente novamente.');
-            return;
-        }
-        if (!committed) {
-            alert(`⚠️ CAPACIDADE MÁXIMA ATINGIDA!\n\nTodas as ${targetRooms} salas de exame estão ocupadas.`);
-            return;
-        }
+    }
+    
+    if (!availableRoom) {
+        return alert(`⚠️ CAPACIDADE MÁXIMA ATINGIDA!\n\nTodas as ${targetRooms} salas de exame estão ocupadas.\nAguarde a liberação de uma sala antes de novos encaminhamentos.`);
+    }
 
-        const allocatedRoom = snapshot.val()[selectedPatient.id];
-
-        db.ref('patients/' + selectedPatient.id).update({
-            status: 'exam',
-            diagnosis,
-            examType,
-            examRoom: allocatedRoom,
-            examSpecialty: targetSpecialty,
-            originSpecialty: userSpecialty,
-            examStatus: 'occupied'
-        }).then(() => {
-            setDiagnosis('');
-            setExamType('');
-            setNeedsExam(false);
-            alert(`✅ Enviado para Sala ${allocatedRoom} de ${specialty?.name || 'Clínica Geral'}`);
-        }).catch(() => {
-            alert('❌ Erro ao encaminhar paciente. Tente novamente.');
-            db.ref('rooms/' + targetSpecialty + '/' + selectedPatient.id).remove();
-        });
+    updatePatient({
+        ...selectedPatient,
+        status: 'exam',
+        diagnosis,
+        examType,
+        examRoom: availableRoom,
+        examSpecialty: targetSpecialty,
+        originSpecialty: userSpecialty,
+        examStatus: 'occupied'
     });
+    
+    setDiagnosis('');
+    setExamType('');
+    setNeedsExam(false);
+    alert(`✅ Enviado para Sala ${availableRoom} de ${specialty?.name || 'Clínica Geral'}`);
 };
 
                 const sendToPharmacy = () => {
@@ -845,30 +834,25 @@ const waitingPatients = (userRole === 'admin'
         updatePatient({...patient, examStatus: 'in-progress'});
     };
 
-   const sendResult = () => {
-    if (!result || !myPatient) return alert('Preencha o resultado!');
-    
-    const examSpecialtyToRemove = myPatient.examSpecialty; // ← captura aqui
-    const patientIdToRemove = myPatient.id;                // ← e aqui
-
-    saveExamResult(myPatient.id, {
-        result,
-        timestamp: new Date().toLocaleTimeString('pt-BR')
-    });
-    
-    updatePatient({
-        ...myPatient,
-        examStatus: 'completed',
-        examRoom: null,
-        examSpecialty: null
-    });
-
-    db.ref('rooms/' + examSpecialtyToRemove + '/' + patientIdToRemove).remove();
-    
-    setResult('');
-    setRoomNumber('');
-    alert('✅ Resultado enviado e sala liberada!');
-};
+    const sendResult = () => {
+        if (!result || !myPatient) return alert('Preencha o resultado!');
+        
+        saveExamResult(myPatient.id, {
+            result,
+            timestamp: new Date().toLocaleTimeString('pt-BR')
+        });
+        
+        updatePatient({
+            ...myPatient,
+            examStatus: 'completed',
+            examRoom: null,
+            examSpecialty: null
+        });
+        
+        setResult('');
+        setRoomNumber('');
+        alert('✅ Resultado enviado e sala liberada!');
+    };
 
     const backBtn = userRole === 'admin' ? () => setView('menu') : logout;
 
